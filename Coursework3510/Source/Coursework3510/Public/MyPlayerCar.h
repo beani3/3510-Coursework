@@ -30,6 +30,9 @@ public:
 	void MoveEnd();
 	void OnHandbrakePressed();
 	void OnHandbrakeReleased();
+
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	float CalcSpeed();
 private:
 
 protected:

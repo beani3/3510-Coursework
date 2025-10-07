@@ -61,3 +61,11 @@ void AMyPlayerCar::OnHandbrakePressed() {
 void AMyPlayerCar::OnHandbrakeReleased() {
 	GetVehicleMovementComponent()->SetHandbrakeInput(false);
 }
+
+float AMyPlayerCar::CalcSpeed() {
+	FVector CurrentVelocity = GetVelocity();
+	float CurrentSpeed = CurrentVelocity.Length();
+	float ForwardSpeed = FVector::DotProduct(GetVelocity(), GetActorForwardVector());
+
+	return ForwardSpeed;
+}
