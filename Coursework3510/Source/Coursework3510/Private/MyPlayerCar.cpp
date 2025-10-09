@@ -69,3 +69,25 @@ float AMyPlayerCar::CalcSpeed() {
 
 	return ForwardSpeed;
 }
+
+void AMyPlayerCar::LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints, bool _bStartFinishLine) 
+{
+	if (CurrentCheckpoint >= _MaxCheckpoints && _bStartFinishLine == true)
+	{
+		Lap += 1;
+		CurrentCheckpoint = 1;
+	}
+	
+	else if (_CheckpointNumber == CurrentCheckpoint + 1) 
+	{
+		CurrentCheckpoint += 1;
+	}
+	
+
+	else if (_CheckpointNumber < CurrentCheckpoint)
+	{
+		CurrentCheckpoint = _CheckpointNumber;
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("Lap: %d, Checkpoint: %d"), Lap, CurrentCheckpoint);
+}

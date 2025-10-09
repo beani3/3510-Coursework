@@ -14,12 +14,14 @@ class COURSEWORK3510_API AMyPlayerCar : public AWheeledVehiclePawn
 public:
 	void BeginPlay();
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent);
+
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputMappingContext* DefaultMappingContext;
 	/* Forward movement input actions
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+
 	class UInputAction* MoveAction;
 	/* Breaking input actions
 	 */
@@ -33,6 +35,12 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "UI")
 	float CalcSpeed();
+
+
+	int32 Lap = 1;
+	int32 CurrentCheckpoint = 0;
+	void LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints, bool _bStartFinishLine);
+
 private:
 
 protected:
