@@ -16,6 +16,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Components/StaticMeshComponent.h"
 #include "ObstaclesBase.generated.h"
 
 UCLASS()
@@ -49,17 +50,17 @@ protected:
 	UPROPERTY(Transient)
 	float LastVFXTime; //last time VFX was spawned.
 
-	//virtual void HandleVehicleHit(AActor* OtherActor, const FHitResult& Hit, float OtherSpeed); //handles what happens when the vehicle hits the obstacle.
+	virtual void HandleVehicleHit(AActor* OtherActor, const FHitResult& Hit, float OtherSpeed); //handles what happens when the vehicle hits the obstacle.
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "ObstacleVFX")
-	//void PlayHitEffects(float OtherSpeed, FVector WorldLocation, FVector WorldNormal); //called when want to play hit SFX and VFX
+	void PlayHitEffects(float OtherSpeed, FVector WorldLocation, FVector WorldNormal); //called when want to play hit SFX and VFX
 
-	//static float GetVehicleSpeed(AActor* VehicleActor); //gets the speed of the vehicle that hit the obstacle.
+	static float GetVehicleSpeed(AActor* VehicleActor); //gets the speed of the vehicle that hit the obstacle.
 
 	bool IsAuth() const { return HasAuthority(); } //checks if the current instance is authoritative (server).
 
 	UFUNCTION()
-	//void OnMeshHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit); //called when the mesh is hit.
+	void OnMeshHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit); //called when the mesh is hit.
 
 public:	
 	// Called every frame
