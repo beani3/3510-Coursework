@@ -2,7 +2,7 @@
 
 
 #include "Checkpoints.h"
-#include "MyPlayerCar.h"
+
 
 //Sets default values
 ACheckpoints::ACheckpoints()
@@ -41,15 +41,7 @@ void ACheckpoints::PostInitializeComponents()
 
 void ACheckpoints::OnVolumeBeginOverlap(class UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (Cast<AMyPlayerCar>(OtherActor))
-	{
-		AMyPlayerCar* Car = Cast<AMyPlayerCar>(OtherActor);
-		Car->LapCheckpoint(CheckpointNumber, MaxCheckpoints, bStartFinishLine);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Not a car"));
-	}
+	
 }
 
 void ACheckpoints::OnVolumeEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
