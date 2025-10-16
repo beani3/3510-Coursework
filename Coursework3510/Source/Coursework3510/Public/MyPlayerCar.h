@@ -17,22 +17,31 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputMappingContext* DefaultMappingContext;
-	/* Forward movement input actions
-	 */
+
+	// Forward movement input actions	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputAction* MoveAction;
-	/* Breaking input actions
-	 */
+
+	// Breaking input action
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputAction* HandbrakeAction;
+
+	// Pause input action
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	class UInputAction* PauseAction;
+
+	// Main Menu input action
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	class UInputAction* MenuAction;
 
 	void Move(const FInputActionValue& Value);
 	void MoveEnd();
 	void OnHandbrakePressed();
 	void OnHandbrakeReleased();
-
-	UFUNCTION(BlueprintCallable, Category = "UI")
-	float CalcSpeed();
+	void OnPauseEnter();
+	void OnPauseExit();
+	void OnMenuEnter();
+	void OnMenuExit();
 private:
 
 protected:

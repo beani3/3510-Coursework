@@ -8,8 +8,7 @@
 void AMyPlayerCar::BeginPlay() {
 	Super::BeginPlay();
 
-	/* Input mapping context 
-	 */
+	// Input mapping context 
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller)) {
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem =
 			ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController
@@ -20,8 +19,7 @@ void AMyPlayerCar::BeginPlay() {
 }
 
 void AMyPlayerCar::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) {
-	/* Setting up action bindings
-	 */
+	// Setting up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent =
 		CastChecked<UEnhancedInputComponent>(PlayerInputComponent)) {
 		
@@ -32,12 +30,19 @@ void AMyPlayerCar::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		// Handbreak
 		EnhancedInputComponent->BindAction(HandbrakeAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::OnHandbrakePressed);
 		EnhancedInputComponent->BindAction(HandbrakeAction, ETriggerEvent::Completed, this, &AMyPlayerCar::OnHandbrakeReleased);
+
+		// Pause Menu
+		EnhancedInputComponent->BindAction(PauseAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::OnPauseEnter);
+		EnhancedInputComponent->BindAction(PauseAction, ETriggerEvent::Completed, this, &AMyPlayerCar::OnPauseExit);
+
+		// Main Menu
+		EnhancedInputComponent->BindAction(MenuAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::OnMenuEnter);
+		EnhancedInputComponent->BindAction(MenuAction, ETriggerEvent::Completed, this, &AMyPlayerCar::OnMenuExit);
 	}
 }
 
 void AMyPlayerCar::Move(const FInputActionValue& Value) {
-	/* Input is a 2D vector
-	 */
+	// Input is a 2D vector
 	FVector2D MovementVector = Value.Get<FVector2D>();
 	GetVehicleMovementComponent()->SetThrottleInput(MovementVector.Y);
 
@@ -62,10 +67,18 @@ void AMyPlayerCar::OnHandbrakeReleased() {
 	GetVehicleMovementComponent()->SetHandbrakeInput(false);
 }
 
-float AMyPlayerCar::CalcSpeed() {
-	FVector CurrentVelocity = GetVelocity();
-	float CurrentSpeed = CurrentVelocity.Length();
-	float ForwardSpeed = FVector::DotProduct(GetVelocity(), GetActorForwardVector());
+void AMyPlayerCar::OnPauseEnter() {
+	
+}
 
-	return ForwardSpeed;
+void AMyPlayerCar::OnPauseExit() {
+
+}
+
+void AMyPlayerCar::OnMenuEnter() {
+
+}
+
+void AMyPlayerCar::OnMenuExit() {
+
 }
