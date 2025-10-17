@@ -67,6 +67,14 @@ void AMyPlayerCar::OnHandbrakeReleased() {
 	GetVehicleMovementComponent()->SetHandbrakeInput(false);
 }
 
+float AMyPlayerCar::CalcSpeed() {
+	FVector CurrentVelocity = GetVelocity();
+	float CurrentSpeed = CurrentVelocity.Length();
+	float ForwardSpeed = FVector::DotProduct(GetVelocity(), GetActorForwardVector());
+	return ForwardSpeed;
+}
+
+
 void AMyPlayerCar::OnPauseEnter() {
 	
 }
@@ -81,7 +89,6 @@ void AMyPlayerCar::OnMenuEnter() {
 
 void AMyPlayerCar::OnMenuExit() {
 
-	return ForwardSpeed;
 }
 
 void AMyPlayerCar::LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints, bool _bStartFinishLine) 
