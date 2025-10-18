@@ -4,56 +4,74 @@
 #include "CoreMinimal.h"
 #include "WheeledVehiclePawn.h"
 #include "InputActionValue.h"
-#include "ChaosVehicleMovementComponent.h"
 #include "MyPlayerCar.generated.h"
+
+class UInputAction;
+class UInputMappingContext;
 
 UCLASS()
 class COURSEWORK3510_API AMyPlayerCar : public AWheeledVehiclePawn
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
+
 public:
-	void BeginPlay();
-	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent);
+    AMyPlayerCar();
 
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	class UInputMappingContext* DefaultMappingContext;
+    virtual void BeginPlay() override;
+    virtual void Tick(float DeltaSeconds) override;
+    virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
-	// Forward movement input actions	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+    UFUNCTION(BlueprintCallable, Category = "UI")
+    float CalcSpeed();
 
-	class UInputAction* MoveAction;
+    void Move(const FInputActionValue& Value);
+    void MoveEnd();
+    void OnHandbrakePressed();
+    void OnHandbrakeReleased();
+    void OnPauseEnter();
+    void OnPauseExit();
+    void OnMenuEnter();
+    void OnMenuExit();
+    void LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints, bool _bStartFinishLine);
 
-	// Breaking input action
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	class UInputAction* HandbrakeAction;
-
-	// Pause input action
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	class UInputAction* PauseAction;
-
-	// Main Menu input action
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	class UInputAction* MenuAction;
-
-	void Move(const FInputActionValue& Value);
-	void MoveEnd();
-	void OnHandbrakePressed();
-	void OnHandbrakeReleased();
-	void OnPauseEnter();
-	void OnPauseExit();
-	void OnMenuEnter();
-	void OnMenuExit();
-
-	UFUNCTION(BlueprintCallable, Category = "UI")
-	float CalcSpeed();
-
-
-	int32 Lap = 1;
-	int32 CurrentCheckpoint = 0;
-	void LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints, bool _bStartFinishLine);
-
-private:
+    int32 Lap = 1;
+    int32 CurrentCheckpoint = 0;
 
 protected:
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vehicle|Steering", meta = (ClampMin = "0.1", UIMin = "0.1"))
+    float SteeringSensitivity = 1.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vehicle|Steering", meta = (ClampMin = "0.1", UIMin = "0.1"))
+    float SteeringSmoothness = 6.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vehicle|Drive")
+    float ThrottleSensitivity = 1.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vehicle|Drive", meta = (ClampMin = "0", ClampMax = "1"))
+    float BrakePower = 1.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vehicle|Drive", meta = (ClampMin = "0", ClampMax = "1"))
+    float IdleBrakeInput = 0.10f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vehicle|Drive")
+    bool bReverseAsBrake = true;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+    UInputMappingContext* DefaultMappingContext = nullptr;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+    UInputAction* MoveAction = nullptr;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+    UInputAction* HandbrakeAction = nullptr;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+    UInputAction* PauseAction = nullptr;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+    UInputAction* MenuAction = nullptr;
+
+private:
+    float TargetSteeringInput = 0.0f;
+    float SmoothedSteeringInput = 0.0f;
 };

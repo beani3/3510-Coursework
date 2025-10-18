@@ -2,115 +2,148 @@
 
 #include "MyPlayerCar.h"
 #include "GameFramework/Controller.h"
+#include "GameFramework/PlayerController.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "ChaosWheeledVehicleMovementComponent.h"
+
+AMyPlayerCar::AMyPlayerCar()
+{
+    PrimaryActorTick.bCanEverTick = true;
+}
 
 void AMyPlayerCar::BeginPlay() {
-	Super::BeginPlay();
+    Super::BeginPlay();
 
-	// Input mapping context 
-	if (APlayerController* PlayerController = Cast<APlayerController>(Controller)) {
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem =
-			ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController
-				->GetLocalPlayer())) {
-			Subsystem->AddMappingContext(DefaultMappingContext, 0);
-		}
-	}
+    if (UChaosWheeledVehicleMovementComponent* MoveComp = Cast<UChaosWheeledVehicleMovementComponent>(GetVehicleMovementComponent()))
+    {
+       
+    }
+
+    if (APlayerController* PlayerController = Cast<APlayerController>(Controller)) {
+        if (UEnhancedInputLocalPlayerSubsystem* Subsystem =
+            ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer())) {
+            if (DefaultMappingContext) { Subsystem->AddMappingContext(DefaultMappingContext, 0); }
+        }
+    }
+}
+
+void AMyPlayerCar::Tick(float DeltaSeconds)
+{
+    Super::Tick(DeltaSeconds);
+
+    SmoothedSteeringInput = FMath::FInterpTo(SmoothedSteeringInput, TargetSteeringInput, DeltaSeconds, SteeringSmoothness);
+
+    if (auto* MoveComp = GetVehicleMovementComponent())
+    {
+        MoveComp->SetSteeringInput(SmoothedSteeringInput);
+    }
 }
 
 void AMyPlayerCar::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) {
-	// Setting up action bindings
-	if (UEnhancedInputComponent* EnhancedInputComponent =
-		CastChecked<UEnhancedInputComponent>(PlayerInputComponent)) {
-		
-		// Moving
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::Move);
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &AMyPlayerCar::MoveEnd);
+    if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
+    {
+        if (MoveAction)
+        {
+            EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::Move);
+            EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &AMyPlayerCar::MoveEnd);
+        }
 
-		// Handbreak
-		EnhancedInputComponent->BindAction(HandbrakeAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::OnHandbrakePressed);
-		EnhancedInputComponent->BindAction(HandbrakeAction, ETriggerEvent::Completed, this, &AMyPlayerCar::OnHandbrakeReleased);
+        if (HandbrakeAction)
+        {
+            EnhancedInputComponent->BindAction(HandbrakeAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::OnHandbrakePressed);
+            EnhancedInputComponent->BindAction(HandbrakeAction, ETriggerEvent::Completed, this, &AMyPlayerCar::OnHandbrakeReleased);
+        }
 
-		// Pause Menu
-		EnhancedInputComponent->BindAction(PauseAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::OnPauseEnter);
-		EnhancedInputComponent->BindAction(PauseAction, ETriggerEvent::Completed, this, &AMyPlayerCar::OnPauseExit);
+        if (PauseAction)
+        {
+            EnhancedInputComponent->BindAction(PauseAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::OnPauseEnter);
+            EnhancedInputComponent->BindAction(PauseAction, ETriggerEvent::Completed, this, &AMyPlayerCar::OnPauseExit);
+        }
 
-		// Main Menu
-		EnhancedInputComponent->BindAction(MenuAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::OnMenuEnter);
-		EnhancedInputComponent->BindAction(MenuAction, ETriggerEvent::Completed, this, &AMyPlayerCar::OnMenuExit);
-	}
+        if (MenuAction)
+        {
+            EnhancedInputComponent->BindAction(MenuAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::OnMenuEnter);
+            EnhancedInputComponent->BindAction(MenuAction, ETriggerEvent::Completed, this, &AMyPlayerCar::OnMenuExit);
+        }
+    }
 }
 
 void AMyPlayerCar::Move(const FInputActionValue& Value) {
-	// Input is a 2D vector
-	FVector2D MovementVector = Value.Get<FVector2D>();
-	GetVehicleMovementComponent()->SetThrottleInput(MovementVector.Y);
+    FVector2D MovementVector = Value.Get<FVector2D>();
 
-	if (MovementVector.Y < 0) {
-		GetVehicleMovementComponent()->SetBrakeInput(MovementVector.Y * -1);
-	}
+    float ThrottleInput = MovementVector.Y * ThrottleSensitivity;
+    TargetSteeringInput = MovementVector.X * SteeringSensitivity;
 
-	GetVehicleMovementComponent()->SetSteeringInput(MovementVector.X);
+    if (auto* MoveComp = GetVehicleMovementComponent())
+    {
+        MoveComp->SetThrottleInput(ThrottleInput);
+
+        if (MovementVector.Y < 0) {
+            MoveComp->SetBrakeInput(-MovementVector.Y * BrakePower);
+        }
+        else {
+            MoveComp->SetBrakeInput(IdleBrakeInput);
+        }
+    }
 }
 
 void AMyPlayerCar::MoveEnd() {
-	GetVehicleMovementComponent()->SetBrakeInput(0);
-	GetVehicleMovementComponent()->SetThrottleInput(0);
-	GetVehicleMovementComponent()->SetSteeringInput(0);
+    if (auto* MoveComp = GetVehicleMovementComponent())
+    {
+        MoveComp->SetBrakeInput(0);
+        MoveComp->SetThrottleInput(0);
+        MoveComp->SetSteeringInput(0);
+    }
+    TargetSteeringInput = 0.0f;
 }
 
 void AMyPlayerCar::OnHandbrakePressed() {
-	GetVehicleMovementComponent()->SetHandbrakeInput(true);
+    if (auto* MoveComp = GetVehicleMovementComponent())
+    {
+        MoveComp->SetHandbrakeInput(true);
+    }
 }
 
 void AMyPlayerCar::OnHandbrakeReleased() {
-	GetVehicleMovementComponent()->SetHandbrakeInput(false);
+    if (auto* MoveComp = GetVehicleMovementComponent())
+    {
+        MoveComp->SetHandbrakeInput(false);
+    }
 }
 
 float AMyPlayerCar::CalcSpeed() {
-	FVector CurrentVelocity = GetVelocity();
-	float CurrentSpeed = CurrentVelocity.Length();
-	float ForwardSpeed = FVector::DotProduct(GetVelocity(), GetActorForwardVector());
-	return ForwardSpeed;
+    FVector CurrentVelocity = GetVelocity();
+    float ForwardSpeed = FVector::DotProduct(CurrentVelocity, GetActorForwardVector());
+    return ForwardSpeed;
 }
 
-
 void AMyPlayerCar::OnPauseEnter() {
-	
 }
 
 void AMyPlayerCar::OnPauseExit() {
-
 }
 
 void AMyPlayerCar::OnMenuEnter() {
-
 }
 
 void AMyPlayerCar::OnMenuExit() {
-
 }
 
-void AMyPlayerCar::LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints, bool _bStartFinishLine) 
+void AMyPlayerCar::LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints, bool _bStartFinishLine)
 {
-	UE_LOG(LogTemp, Warning, TEXT("LapCheckpoint called!"));
-	
-	if (CurrentCheckpoint >= _MaxCheckpoints && _bStartFinishLine == true)
-	{
-		Lap += 1;
-		CurrentCheckpoint = 1;
-	}
-	
-	else if (_CheckpointNumber == CurrentCheckpoint + 1) 
-	{
-		CurrentCheckpoint += 1;
-	}
-	
-
-	else if (_CheckpointNumber < CurrentCheckpoint)
-	{
-		CurrentCheckpoint = _CheckpointNumber;
-	}
-
-	UE_LOG(LogTemp, Warning, TEXT("Lap: %i, Checkpoint: %i"), Lap, CurrentCheckpoint);
+    if (CurrentCheckpoint >= _MaxCheckpoints && _bStartFinishLine == true)
+    {
+        Lap += 1;
+        CurrentCheckpoint = 1;
+    }
+    else if (_CheckpointNumber == CurrentCheckpoint + 1)
+    {
+        CurrentCheckpoint += 1;
+    }
+    else if (_CheckpointNumber < CurrentCheckpoint)
+    {
+        CurrentCheckpoint = _CheckpointNumber;
+    }
+    UE_LOG(LogTemp, Warning, TEXT("Lap: %i, Checkpoint: %i"), Lap, CurrentCheckpoint);
 }
