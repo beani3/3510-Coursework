@@ -32,22 +32,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputAction* PauseAction;
 
-	// Main Menu input action
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	class UInputAction* MenuAction;
-
 	void Move(const FInputActionValue& Value);
 	void MoveEnd();
 	void OnHandbrakePressed();
 	void OnHandbrakeReleased();
 	void OnPauseEnter();
 	void OnPauseExit();
-	void OnMenuEnter();
-	void OnMenuExit();
-
-	UFUNCTION(BlueprintCallable, Category = "UI")
-	float CalcSpeed();
-
 
 	int32 Lap = 1;
 	int32 CurrentCheckpoint = 0;

@@ -34,10 +34,6 @@ void AMyPlayerCar::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		// Pause Menu
 		EnhancedInputComponent->BindAction(PauseAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::OnPauseEnter);
 		EnhancedInputComponent->BindAction(PauseAction, ETriggerEvent::Completed, this, &AMyPlayerCar::OnPauseExit);
-
-		// Main Menu
-		EnhancedInputComponent->BindAction(MenuAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::OnMenuEnter);
-		EnhancedInputComponent->BindAction(MenuAction, ETriggerEvent::Completed, this, &AMyPlayerCar::OnMenuExit);
 	}
 }
 
@@ -67,27 +63,12 @@ void AMyPlayerCar::OnHandbrakeReleased() {
 	GetVehicleMovementComponent()->SetHandbrakeInput(false);
 }
 
-float AMyPlayerCar::CalcSpeed() {
-	FVector CurrentVelocity = GetVelocity();
-	float CurrentSpeed = CurrentVelocity.Length();
-	float ForwardSpeed = FVector::DotProduct(GetVelocity(), GetActorForwardVector());
-	return ForwardSpeed;
-}
-
 
 void AMyPlayerCar::OnPauseEnter() {
 	
 }
 
 void AMyPlayerCar::OnPauseExit() {
-
-}
-
-void AMyPlayerCar::OnMenuEnter() {
-
-}
-
-void AMyPlayerCar::OnMenuExit() {
 
 }
 
