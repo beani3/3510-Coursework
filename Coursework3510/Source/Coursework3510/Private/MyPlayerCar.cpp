@@ -4,6 +4,7 @@
 #include "GameFramework/Controller.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Blueprint/UserWidget.h"
 
 void AMyPlayerCar::BeginPlay() {
 	Super::BeginPlay();
@@ -63,13 +64,15 @@ void AMyPlayerCar::OnHandbrakeReleased() {
 	GetVehicleMovementComponent()->SetHandbrakeInput(false);
 }
 
-
 void AMyPlayerCar::OnPauseEnter() {
-	
+	PauseMenuInst = CreateWidget<UUserWidget>(GetWorld(), PauseMenu);
+	PauseMenuInst->AddToViewport();
+	bInPauseMenu = true;
 }
 
 void AMyPlayerCar::OnPauseExit() {
-
+	PauseMenuInst->RemoveFromViewport();
+	bInPauseMenu = false;
 }
 
 void AMyPlayerCar::LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints, bool _bStartFinishLine) 
@@ -87,7 +90,6 @@ void AMyPlayerCar::LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints,
 		CurrentCheckpoint += 1;
 	}
 	
-
 	else if (_CheckpointNumber < CurrentCheckpoint)
 	{
 		CurrentCheckpoint = _CheckpointNumber;

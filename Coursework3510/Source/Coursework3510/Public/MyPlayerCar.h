@@ -14,23 +14,27 @@ class COURSEWORK3510_API AMyPlayerCar : public AWheeledVehiclePawn
 public:
 	void BeginPlay();
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent);
-
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputMappingContext* DefaultMappingContext;
 
 	// Forward movement input actions	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-
 	class UInputAction* MoveAction;
 
 	// Breaking input action
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputAction* HandbrakeAction;
 
-	// Pause input action
+	// Pause Menu variables
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputAction* PauseAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<UUserWidget> PauseMenu;
+	UUserWidget* PauseMenuInst;
+
+	bool bInPauseMenu = false;
 
 	void Move(const FInputActionValue& Value);
 	void MoveEnd();
