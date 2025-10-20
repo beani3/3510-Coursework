@@ -21,7 +21,6 @@ public:
 
 	// Forward movement input actions	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-
 	class UInputAction* MoveAction;
 
 	// Breaking input action
@@ -42,13 +41,14 @@ public:
 	void OnHandbrakeReleased();
 	void OnPauseEnter();
 	void OnPauseExit();
-	void OnMenuEnter();
-	void OnMenuExit();
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
+	TSubclassOf<UUserWidget> UPauseMenu;
 
-	UFUNCTION(BlueprintCallable, Category = "UI")
-	float CalcSpeed();
-
-
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TObjectPtr<UUserWidget> PauseMenuInst;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
 	int32 Lap = 1;
 	int32 CurrentCheckpoint = 0;
 	void LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints, bool _bStartFinishLine);
