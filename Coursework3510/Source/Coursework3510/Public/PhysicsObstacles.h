@@ -15,7 +15,7 @@ public:
 	APhysicsObstacles();
 
 protected:
-	// Scale applied to incoming NormalImpulse to convert to an impulse applied to this obstacle's mesh
+	//Scale applied to incoming NormalImpulse to convert to an impulse applied to this obstacle's mesh
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Physics")
 	float ImpulseScale = 1.0f;
 
