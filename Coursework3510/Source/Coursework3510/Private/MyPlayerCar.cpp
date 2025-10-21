@@ -33,8 +33,7 @@ void AMyPlayerCar::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		EnhancedInputComponent->BindAction(HandbrakeAction, ETriggerEvent::Completed, this, &AMyPlayerCar::OnHandbrakeReleased);
 
 		// Pause Menu
-		EnhancedInputComponent->BindAction(PauseAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::OnPauseEnter);
-		EnhancedInputComponent->BindAction(PauseAction, ETriggerEvent::Completed, this, &AMyPlayerCar::OnPauseExit);
+		EnhancedInputComponent->BindAction(PauseAction, ETriggerEvent::Started, this, &AMyPlayerCar::OnPauseEnter);
 	}
 }
 
@@ -66,13 +65,15 @@ void AMyPlayerCar::OnHandbrakeReleased() {
 
 void AMyPlayerCar::OnPauseEnter() {
 	PauseMenuInst = CreateWidget<UUserWidget>(GetWorld(), PauseMenu);
-	PauseMenuInst->AddToViewport();
-	bInPauseMenu = true;
-}
 
-void AMyPlayerCar::OnPauseExit() {
-	PauseMenuInst->RemoveFromViewport();
-	bInPauseMenu = false;
+	if (bInPauseMenu) {
+		PauseMenuInst->RemoveFromViewport();
+		bInPauseMenu = false;
+	}
+	else {
+		PauseMenuInst->AddToViewport();
+		bInPauseMenu = true;
+	}
 }
 
 void AMyPlayerCar::LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints, bool _bStartFinishLine) 

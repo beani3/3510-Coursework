@@ -30,9 +30,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputAction* PauseAction;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
 	TSubclassOf<UUserWidget> PauseMenu;
 	UUserWidget* PauseMenuInst;
+
+	UPROPERTY(EditAnywhere, BluePrintReadOnly, Category = "UI")
+	TSubclassOf<UUserWidget> GameUI;
+	UUserWidget* GameUIInst;
 
 	bool bInPauseMenu = false;
 
@@ -41,7 +45,6 @@ public:
 	void OnHandbrakePressed();
 	void OnHandbrakeReleased();
 	void OnPauseEnter();
-	void OnPauseExit();
 
 	int32 Lap = 1;
 	int32 CurrentCheckpoint = 0;
