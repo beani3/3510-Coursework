@@ -81,7 +81,7 @@ void AMyPlayerCar::OnMenuEnter() {
 
 void AMyPlayerCar::OnMenuExit() {
 
-	return ForwardSpeed;
+	
 }
 
 void AMyPlayerCar::LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints, bool _bStartFinishLine)
@@ -106,5 +106,4 @@ void AMyPlayerCar::LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints,
 	}
 
 	UE_LOG(LogTemp, Warning, TEXT("Lap: %i, Checkpoint: %i"), Lap, CurrentCheckpoint);
-}
 }
