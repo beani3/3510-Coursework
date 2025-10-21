@@ -7,6 +7,12 @@
 #include "AC_HealthComponent.generated.h"
 
 
+// --- Delegate definitions (BlueprintAssignable) ---
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHealthChanged, float, NewHealth, float, HealthChange);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDamaged, float, DamageAmount);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHealed, float, HealAmount);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDied);
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class COURSEWORK3510_API UAC_HealthComponent : public UActorComponent
 {
