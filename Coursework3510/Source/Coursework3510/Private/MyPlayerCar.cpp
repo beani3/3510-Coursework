@@ -4,6 +4,7 @@
 #include "GameFramework/Controller.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Blueprint/UserWidget.h"
 
 void AMyPlayerCar::BeginPlay() {
 	Super::BeginPlay();
@@ -33,7 +34,6 @@ void AMyPlayerCar::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 
 		// Pause Menu
 		EnhancedInputComponent->BindAction(PauseAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::OnPauseEnter);
-		EnhancedInputComponent->BindAction(PauseAction, ETriggerEvent::Completed, this, &AMyPlayerCar::OnPauseExit);
 	}
 }
 
@@ -63,13 +63,16 @@ void AMyPlayerCar::OnHandbrakeReleased() {
 	GetVehicleMovementComponent()->SetHandbrakeInput(false);
 }
 
-
 void AMyPlayerCar::OnPauseEnter() {
-	
-}
+	PauseMenuInst = CreateWidget<UUserWidget>(GetWorld(), UPauseMenu);
 
-void AMyPlayerCar::OnPauseExit() {
+	if (bInPauseMenu) {
+		PauseMenuInst->RemoveFromViewport();
+		bInPauseMenu = false;
+	}
 
+	PauseMenuInst->AddToViewport();
+	bInPauseMenu = true;
 }
 
 void AMyPlayerCar::LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints, bool _bStartFinishLine) 
