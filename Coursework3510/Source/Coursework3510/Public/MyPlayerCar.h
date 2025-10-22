@@ -31,22 +31,17 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputAction* PauseAction;
 
-	// Main Menu input action
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	class UInputAction* MenuAction;
-
 	void Move(const FInputActionValue& Value);
 	void MoveEnd();
 	void OnHandbrakePressed();
 	void OnHandbrakeReleased();
 	void OnPauseEnter();
-	void OnPauseExit();
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
 	TSubclassOf<UUserWidget> UPauseMenu;
+	UUserWidget* PauseMenuInst;
 
-	UPROPERTY(EditAnywhere, Category = "UI")
-	TObjectPtr<UUserWidget> PauseMenuInst;
+	bool bInPauseMenu = false;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
 	int32 Lap = 1;
