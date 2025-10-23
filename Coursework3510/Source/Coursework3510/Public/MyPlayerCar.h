@@ -45,9 +45,6 @@ public:
 	void OnMenuEnter();
 	void OnMenuExit();
 
-	UFUNCTION(BlueprintCallable, Category = "UI")
-	float CalcSpeed();
-
 
 	int32 Lap = 1;
 	int32 CurrentCheckpoint = 0;
