@@ -15,7 +15,7 @@ public:
 	void BeginPlay();
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent);
 
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputMappingContext* DefaultMappingContext;
 

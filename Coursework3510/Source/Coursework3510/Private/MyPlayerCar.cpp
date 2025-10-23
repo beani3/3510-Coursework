@@ -22,7 +22,7 @@ void AMyPlayerCar::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	// Setting up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent =
 		CastChecked<UEnhancedInputComponent>(PlayerInputComponent)) {
-		
+
 		// Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::Move);
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &AMyPlayerCar::MoveEnd);
@@ -67,16 +67,8 @@ void AMyPlayerCar::OnHandbrakeReleased() {
 	GetVehicleMovementComponent()->SetHandbrakeInput(false);
 }
 
-float AMyPlayerCar::CalcSpeed() {
-	FVector CurrentVelocity = GetVelocity();
-	float CurrentSpeed = CurrentVelocity.Length();
-	float ForwardSpeed = FVector::DotProduct(GetVelocity(), GetActorForwardVector());
-	return ForwardSpeed;
-}
-
-
 void AMyPlayerCar::OnPauseEnter() {
-	
+
 }
 
 void AMyPlayerCar::OnPauseExit() {
@@ -89,23 +81,24 @@ void AMyPlayerCar::OnMenuEnter() {
 
 void AMyPlayerCar::OnMenuExit() {
 
+	
 }
 
-void AMyPlayerCar::LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints, bool _bStartFinishLine) 
+void AMyPlayerCar::LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints, bool _bStartFinishLine)
 {
 	UE_LOG(LogTemp, Warning, TEXT("LapCheckpoint called!"));
-	
+
 	if (CurrentCheckpoint >= _MaxCheckpoints && _bStartFinishLine == true)
 	{
 		Lap += 1;
 		CurrentCheckpoint = 1;
 	}
-	
-	else if (_CheckpointNumber == CurrentCheckpoint + 1) 
+
+	else if (_CheckpointNumber == CurrentCheckpoint + 1)
 	{
 		CurrentCheckpoint += 1;
 	}
-	
+
 
 	else if (_CheckpointNumber < CurrentCheckpoint)
 	{
