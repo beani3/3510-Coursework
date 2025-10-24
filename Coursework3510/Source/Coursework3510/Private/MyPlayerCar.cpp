@@ -15,8 +15,8 @@ void AMyPlayerCar::BeginPlay() {
 			ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController
 				->GetLocalPlayer())) {
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
-		}
-	}
+		};
+	};
 }
 
 void AMyPlayerCar::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) {
@@ -65,14 +65,14 @@ void AMyPlayerCar::OnHandbrakeReleased() {
 
 void AMyPlayerCar::OnPauseEnter() {
 	PauseMenuInst = CreateWidget<UUserWidget>(GetWorld(), PauseMenu);
-
+	APlayerController* PlayerController = Cast<APlayerController>(Controller);
+	
+	PauseMenuInst->AddToViewport();
+	bInPauseMenu = true;
+	
 	if (bInPauseMenu) {
-		PauseMenuInst->RemoveFromViewport();
-		bInPauseMenu = false;
-	}
-	else {
-		PauseMenuInst->AddToViewport();
-		bInPauseMenu = true;
+		PlayerController->bShowMouseCursor = true;
+		PlayerController->SetInputMode(FInputModeUIOnly());
 	}
 }
 

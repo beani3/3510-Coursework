@@ -34,10 +34,6 @@ public:
 	TSubclassOf<UUserWidget> PauseMenu;
 	UUserWidget* PauseMenuInst;
 
-	UPROPERTY(EditAnywhere, BluePrintReadOnly, Category = "UI")
-	TSubclassOf<UUserWidget> GameUI;
-	UUserWidget* GameUIInst;
-
 	bool bInPauseMenu = false;
 
 	void Move(const FInputActionValue& Value);
