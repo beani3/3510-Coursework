@@ -36,8 +36,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputAction* MenuAction;
 
+	// Steering input action
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	class UInputAction* SteeringAction;
+
 	void Move(const FInputActionValue& Value);
 	void MoveEnd();
+	void Steering(const FInputActionValue& Value);
+	void SteeringEnd();
 	void OnHandbrakePressed();
 	void OnHandbrakeReleased();
 	void OnPauseEnter();

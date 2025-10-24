@@ -27,6 +27,10 @@ void AMyPlayerCar::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::Move);
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &AMyPlayerCar::MoveEnd);
 
+		// Steering
+		EnhancedInputComponent->BindAction(SteeringAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::Steering);
+		EnhancedInputComponent->BindAction(SteeringAction, ETriggerEvent::Completed, this, &AMyPlayerCar::SteeringEnd);
+
 		// Handbreak
 		EnhancedInputComponent->BindAction(HandbrakeAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::OnHandbrakePressed);
 		EnhancedInputComponent->BindAction(HandbrakeAction, ETriggerEvent::Completed, this, &AMyPlayerCar::OnHandbrakeReleased);
@@ -50,13 +54,22 @@ void AMyPlayerCar::Move(const FInputActionValue& Value) {
 		GetVehicleMovementComponent()->SetBrakeInput(MovementVector.Y * -1);
 	}
 
-	GetVehicleMovementComponent()->SetSteeringInput(MovementVector.X);
+	
 }
 
 void AMyPlayerCar::MoveEnd() {
 	GetVehicleMovementComponent()->SetBrakeInput(0);
 	GetVehicleMovementComponent()->SetThrottleInput(0);
-	GetVehicleMovementComponent()->SetSteeringInput(0);
+}
+
+void AMyPlayerCar::Steering(const FInputActionValue& Value) {
+	// IA_Steering should be Axis1D, so read a float in [-1, 1]
+	const float SteeringAxis = Value.Get<float>();
+	GetVehicleMovementComponent()->SetSteeringInput(SteeringAxis);
+}
+
+void AMyPlayerCar::SteeringEnd() {
+	GetVehicleMovementComponent()->SetSteeringInput(0.f);
 }
 
 void AMyPlayerCar::OnHandbrakePressed() {
