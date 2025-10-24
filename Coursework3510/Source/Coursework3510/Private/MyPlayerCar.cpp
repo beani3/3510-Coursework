@@ -63,7 +63,7 @@ void AMyPlayerCar::MoveEnd() {
 }
 
 void AMyPlayerCar::Steering(const FInputActionValue& Value) {
-	// IA_Steering should be Axis1D, so read a float in [-1, 1]
+	
 	const float SteeringAxis = Value.Get<float>();
 	GetVehicleMovementComponent()->SetSteeringInput(SteeringAxis);
 }
