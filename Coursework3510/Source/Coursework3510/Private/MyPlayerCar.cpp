@@ -5,6 +5,8 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/GameEngine.h"
+#include "RaceManager.h"
+#include "Kismet/GameplayStatics.h"
 
 
 void AMyPlayerCar::BeginPlay() {
@@ -107,6 +109,18 @@ void AMyPlayerCar::LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints,
 	{
 		Lap += 1;
 		CurrentCheckpoint = 1;
+
+		ARaceManager* RaceManager = nullptr;
+		{
+			TArray<AActor*> Found;
+			UGameplayStatics::GetAllActorsOfClass(GetWorld(), ARaceManager::StaticClass(), Found);
+			if (Found.Num() > 0) RaceManager = Cast<ARaceManager>(Found[0]);
+		}
+		if (RaceManager)
+		{
+			RaceManager->OnPlayerCrossedStartFinish(Lap);
+		}
+
 	}
 
 	else if (_CheckpointNumber == CurrentCheckpoint + 1)
