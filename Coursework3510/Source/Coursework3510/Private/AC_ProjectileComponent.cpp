@@ -4,60 +4,58 @@
 #include "AC_ProjectileComponent.h"
 #include "Projectile.h"
 #include "Kismet/GameplayStatics.h"
+#include "Engine/World.h"
 
-
-// Sets default values for this component's properties
 UAC_ProjectileComponent::UAC_ProjectileComponent()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
-	PrimaryComponentTick.bCanEverTick = true;
-
-	// ...
+	PrimaryComponentTick.bCanEverTick = false;
 }
 
-bool UAC_ProjectileComponent::FireByRow(const FProjectileRow& Row, USceneComponent* HomingTarget)
-{
-	if (!GetOwner() || !ProjectileClass) return false;
-
-	const FTransform SpawnTM = MuzzleOffset * GetOwner()->GetActorTransform();
-
-	APawn* InstigatorPawn = Cast<APawn>(GetOwner());
-
-	AProjectile* Proj = GetWorld()->SpawnActorDeferred<AProjectile>(
-		ProjectileClass,                   // TSubclassOf<AProjectile>
-		SpawnTM,                           // const FTransform&
-		GetOwner(),                        // AActor* Owner
-		InstigatorPawn,                    // APawn* Instigator  << IMPORTANT
-		ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn
-	);
-
-	if (!Proj) return false;
-
-	Proj->InitFromItemRow(Row, GetOwner(), HomingTarget);
-	UGameplayStatics::FinishSpawningActor(Proj, SpawnTM);
-
-	return true;
-}
-// Called when the game starts
 void UAC_ProjectileComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// If you forget to assign a class, it’ll still work in-editor if AProjectile is the default
 	if (!ProjectileClass)
 	{
 		ProjectileClass = AProjectile::StaticClass();
 	}
 }
-	
 
-
-
-// Called every frame
-void UAC_ProjectileComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+bool UAC_ProjectileComponent::FireByDef(const UProjectileDef* Def, USceneComponent* HomingTarget)
 {
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	if (!GetOwner() || !ProjectileClass || !Def)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ProjectileComponent] FireByDef failed — invalid input."));
+		return false;
+	}
 
-	// ...
+	// Build spawn transform using MuzzleOffset (can be set in Blueprint)
+	const FTransform SpawnTM = MuzzleOffset * GetOwner()->GetActorTransform();
+
+	// Safe instigator cast
+	APawn* InstPawn = Cast<APawn>(GetOwner());
+
+	// Deferred spawn lets you configure projectile before it fully spawns
+	AProjectile* Proj = GetWorld()->SpawnActorDeferred<AProjectile>(
+		ProjectileClass,
+		SpawnTM,
+		GetOwner(),
+		InstPawn,
+		ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn
+	);
+
+	if (!Proj)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[ProjectileComponent] SpawnActorDeferred returned null."));
+		return false;
+	}
+
+	// Initialize projectile using data from the Data Asset
+	Proj->InitFromDef(Def, GetOwner(), HomingTarget);
+
+	// Complete the spawn
+	UGameplayStatics::FinishSpawningActor(Proj, SpawnTM);
+
+	return true;
 }
-

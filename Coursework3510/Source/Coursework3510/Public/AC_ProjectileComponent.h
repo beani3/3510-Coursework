@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "ItemTypes.h"
+#include "ProjectileDef.h"
 #include "AC_ProjectileComponent.generated.h"
 
 class AProjectile;
@@ -15,9 +16,7 @@ class COURSEWORK3510_API UAC_ProjectileComponent : public UActorComponent
 	GENERATED_BODY()
 
 public:	
-	// Sets default values for this component's properties
 	UAC_ProjectileComponent();
-
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Projectile")
 	TSubclassOf<AProjectile> ProjectileClass;
@@ -26,7 +25,7 @@ public:
 	FTransform MuzzleOffset;
 
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
-	bool FireByRow(const FProjectileRow& Row, USceneComponent* HomingTarget = nullptr);
+	bool FireByDef(const UProjectileDef* Def, USceneComponent* HomingTarget = nullptr);
 
 
 protected:
@@ -35,7 +34,6 @@ protected:
 
 public:	
 	// Called every frame
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-
+	
 		
 };

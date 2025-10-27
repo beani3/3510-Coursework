@@ -10,53 +10,55 @@
 // Sets default values
 AProjectile::AProjectile()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
-	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
-	SetRootComponent(Mesh);
-	Mesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	Mesh->SetCollisionResponseToAllChannels(ECR_Block);
-	Mesh->SetGenerateOverlapEvents(false);
+	// Root collision (UpdatedComponent must be a collider)
+	Collision = CreateDefaultSubobject<USphereComponent>(TEXT("Collision"));
+	Collision->InitSphereRadius(16.f);
+	Collision->SetCollisionProfileName(TEXT("BlockAllDynamic")); // blocks world + pawns
+	Collision->SetGenerateOverlapEvents(false);
+	SetRootComponent(Collision);
+
+	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));	
+	Mesh->SetupAttachment(Collision);
+	Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
 
 	Move = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("Move"));
+	Move->SetUpdatedComponent(Collision);
 	Move->bRotationFollowsVelocity = true;
 	Move->ProjectileGravityScale = 0.f;
+	
 }
 
-// Called when the game starts or when spawned
 void AProjectile::BeginPlay()
 {
 	Super::BeginPlay();
-
-	Mesh->OnComponentHit.AddDynamic(this, &AProjectile::OnHit);
+	Collision->OnComponentHit.AddDynamic(this, &AProjectile::OnHit);
 	Move->OnProjectileBounce.AddDynamic(this, &AProjectile::OnBounce);
 
-	if (Data.LifeSeconds > 0.f)
-		SetLifeSpan(Data.LifeSeconds);
+	if (Data && Data->LifeSeconds > 0.f)
+		SetLifeSpan(Data->LifeSeconds);
 }
 
-void AProjectile::InitFromItemRow(const FProjectileRow& Row, AActor* InInstigator, USceneComponent* HomingTarget)
+void AProjectile::InitFromDef(const UProjectileDef* Def, AActor* InInstigator, USceneComponent* HomingTarget)
 {
-	Data = Row;
+	Data = Def;
 	InstigatorActor = InInstigator;
+	check(Data);
 
-	if (UStaticMesh* M = Row.Mesh.LoadSynchronous())
-		Mesh->SetStaticMesh(M);
+	if (UStaticMesh* M = Data->Mesh.LoadSynchronous())     Mesh->SetStaticMesh(M);
+	if (UMaterialInterface* Mat = Data->MeshMaterial.LoadSynchronous()) Mesh->SetMaterial(0, Mat);
 
-	if (UMaterialInterface* Mat = Row.MeshMaterial.LoadSynchronous())
-		Mesh->SetMaterial(0, Mat);
+	Move->InitialSpeed = Data->Speed;
+	Move->MaxSpeed = Data->Speed;
+	Move->Velocity = GetActorForwardVector() * Data->Speed;
 
-	Move->InitialSpeed = Row.Speed;
-	Move->MaxSpeed = Row.Speed;
-	Move->Velocity = GetActorForwardVector() * Row.Speed;
-
-	const bool bBounce = (Row.Behavior == EProjBehavior::Bouncy || Row.Behavior == EProjBehavior::Homing);
-	Move->bShouldBounce = (Row.Behavior == EProjBehavior::Bouncy);
+	Move->bShouldBounce = (Data->Behavior == EProjBehavior::Bouncy);
 	Move->Bounciness = 0.5f;
 	Move->Friction = 0.2f;
 
-	const bool bHoming = (Row.Behavior == EProjBehavior::Homing);
+	const bool bHoming = (Data->Behavior == EProjBehavior::Homing);
 	Move->bIsHomingProjectile = bHoming;
 	if (bHoming && HomingTarget)
 	{
@@ -64,24 +66,16 @@ void AProjectile::InitFromItemRow(const FProjectileRow& Row, AActor* InInstigato
 		Move->HomingAccelerationMagnitude = 8000.f;
 	}
 
-	//add effects later if needed
+	if (!Data->FireSFX.IsNull())
+		UGameplayStatics::PlaySoundAtLocation(this, Data->FireSFX.LoadSynchronous(), GetActorLocation());
 }
 
 bool AProjectile::ShouldBounceOff(const AActor* Other) const
 {
 	if (!Other) return true;
-
-	for (const FName& N : Data.NoBounceTags)
-		if (Other->ActorHasTag(N))
-			return false;
-
-	if (Data.AllowedBounceTags.Num() == 0)
-		return true;
-
-	for (const FName& A : Data.AllowedBounceTags)
-		if (Other->ActorHasTag(A))
-			return true;
-
+	for (const FName& N : Data->NoBounceTags) if (Other->ActorHasTag(N)) return false;
+	if (Data->AllowedBounceTags.Num() == 0) return true;
+	for (const FName& A : Data->AllowedBounceTags) if (Other->ActorHasTag(A)) return true;
 	return false;
 }
 
@@ -90,19 +84,18 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* Other, UPrimitiveC
 {
 	if (!Move->bShouldBounce || !ShouldBounceOff(Other))
 	{
-		//add impact effects here later
-
+		if (!Data->ImpactSFX.IsNull())
+			UGameplayStatics::PlaySoundAtLocation(this, Data->ImpactSFX.LoadSynchronous(), Hit.ImpactPoint);
 		Die();
 	}
 }
 
 void AProjectile::OnBounce(const FHitResult& Impact, const FVector& Vel)
 {
-	if (++BounceCount >= Data.MaxBounces)
+	if (++BounceCount >= Data->MaxBounces)
 	{
-		//if (!Data.ImpactSFX.IsNull())
-			//UGameplayStatics::PlaySoundAtLocation(this, Data.ImpactSFX.LoadSynchronous(), Impact.ImpactPoint);
-
+		if (!Data->ImpactSFX.IsNull())
+			UGameplayStatics::PlaySoundAtLocation(this, Data->ImpactSFX.LoadSynchronous(), Impact.ImpactPoint);
 		Die();
 	}
 }
@@ -111,10 +104,3 @@ void AProjectile::Die()
 {
 	Destroy();
 }
-// Called every frame
-void AProjectile::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-}
-
