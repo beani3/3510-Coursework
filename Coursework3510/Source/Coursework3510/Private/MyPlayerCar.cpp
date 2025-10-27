@@ -4,6 +4,8 @@
 #include "GameFramework/Controller.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Engine/GameEngine.h"
+
 
 void AMyPlayerCar::BeginPlay() {
 	Super::BeginPlay();
@@ -119,4 +121,9 @@ void AMyPlayerCar::LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints,
 	}
 
 	UE_LOG(LogTemp, Warning, TEXT("Lap: %i, Checkpoint: %i"), Lap, CurrentCheckpoint);
+	if (GEngine)
+	{
+		FString Message = FString::Printf(TEXT("Lap: %d, Checkpoint: %d"), Lap, CurrentCheckpoint);
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, Message);
+	}
 }
