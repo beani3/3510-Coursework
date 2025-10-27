@@ -26,6 +26,9 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
     EBuffType BuffType = EBuffType::Heal;
 
+
+    
+
     /** Power of the buff — interpretation depends on BuffType */
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
     float Magnitude = 50.f;
