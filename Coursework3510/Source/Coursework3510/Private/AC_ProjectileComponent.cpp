@@ -1,10 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "AC_ProjectileComponent.h"
 #include "Projectile.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
+#include "Components/SceneComponent.h"
+#include "GameFramework/Pawn.h"
 
 UAC_ProjectileComponent::UAC_ProjectileComponent()
 {
@@ -15,47 +16,74 @@ void UAC_ProjectileComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// If you forget to assign a class, it’ll still work in-editor if AProjectile is the default
+	// Default projectile class if not assigned
 	if (!ProjectileClass)
 	{
 		ProjectileClass = AProjectile::StaticClass();
 	}
 }
 
+USceneComponent* UAC_ProjectileComponent::ResolveMuzzle() const
+{
+	if (MuzzleComponent)
+		return MuzzleComponent;
+
+	if (AActor* Owner = GetOwner())
+	{
+		// Try a component literally named "Muzzle"
+		if (USceneComponent* ByName = Cast<USceneComponent>(Owner->GetDefaultSubobjectByName(TEXT("Muzzle"))))
+			return ByName;
+
+		// Try to find any ArrowComponent (optional)
+		if (USceneComponent* Arrow = Cast<USceneComponent>(Owner->FindComponentByClass<USceneComponent>()))
+			return Arrow;
+
+		// Fallback: root
+		return Owner->GetRootComponent();
+	}
+	return nullptr;
+}
+
+FTransform UAC_ProjectileComponent::BuildSpawnTM() const
+{
+	if (USceneComponent* Muzzle = ResolveMuzzle())
+	{
+		return Muzzle->GetComponentTransform();
+	}
+	// Final fallback: push in front of owner using offset
+	return MuzzleOffset * GetOwner()->GetActorTransform();
+}
+
 bool UAC_ProjectileComponent::FireByDef(const UProjectileDef* Def, USceneComponent* HomingTarget)
 {
 	if (!GetOwner() || !ProjectileClass || !Def)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[ProjectileComponent] FireByDef failed — invalid input."));
 		return false;
-	}
 
-	// Build spawn transform using MuzzleOffset (can be set in Blueprint)
-	const FTransform SpawnTM = MuzzleOffset * GetOwner()->GetActorTransform();
-
-	// Safe instigator cast
+	
+	USceneComponent* Muzzle = ResolveMuzzle();
 	APawn* InstPawn = Cast<APawn>(GetOwner());
 
-	// Deferred spawn lets you configure projectile before it fully spawns
+	const FTransform SpawnTM = Muzzle ? Muzzle->GetComponentTransform()
+		: (MuzzleOffset * GetOwner()->GetActorTransform());
+
 	AProjectile* Proj = GetWorld()->SpawnActorDeferred<AProjectile>(
-		ProjectileClass,
-		SpawnTM,
-		GetOwner(),
-		InstPawn,
-		ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn
-	);
+		ProjectileClass, SpawnTM, GetOwner(), InstPawn,
+		ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
 
 	if (!Proj)
-	{
-		UE_LOG(LogTemp, Error, TEXT("[ProjectileComponent] SpawnActorDeferred returned null."));
 		return false;
-	}
 
-	// Initialize projectile using data from the Data Asset
 	Proj->InitFromDef(Def, GetOwner(), HomingTarget);
 
-	// Complete the spawn
+	// Ensure correct rotation
+	Proj->SetActorTransform(SpawnTM);
+
 	UGameplayStatics::FinishSpawningActor(Proj, SpawnTM);
+
+	UE_LOG(LogTemp, Log, TEXT("[ProjComp] Fired %s from %s | Fwd=%s"),
+		*GetNameSafe(Proj),
+		*SpawnTM.GetLocation().ToString(),
+		*SpawnTM.GetRotation().GetForwardVector().ToString());
 
 	return true;
 }

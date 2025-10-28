@@ -28,6 +28,7 @@ AProjectile::AProjectile()
 	Move->SetUpdatedComponent(Collision);
 	Move->bRotationFollowsVelocity = true;
 	Move->ProjectileGravityScale = 0.f;
+	Move->bInitialVelocityInLocalSpace = false;
 	
 }
 
@@ -43,16 +44,21 @@ void AProjectile::BeginPlay()
 
 void AProjectile::InitFromDef(const UProjectileDef* Def, AActor* InInstigator, USceneComponent* HomingTarget)
 {
-	Data = Def;
-	InstigatorActor = InInstigator;
-	check(Data);
+	Data = Def; InstigatorActor = InInstigator; check(Data);
 
-	if (UStaticMesh* M = Data->Mesh.LoadSynchronous())     Mesh->SetStaticMesh(M);
+	if (UStaticMesh* M = Data->Mesh.LoadSynchronous())         Mesh->SetStaticMesh(M);
 	if (UMaterialInterface* Mat = Data->MeshMaterial.LoadSynchronous()) Mesh->SetMaterial(0, Mat);
+
+	if (InstigatorActor) Collision->IgnoreActorWhenMoving(InstigatorActor, true);
+
+	// Use the ACTUAL spawn transform's forward (world-space)
+	const FVector ShootDir = GetActorTransform().GetRotation().GetForwardVector().GetSafeNormal();
 
 	Move->InitialSpeed = Data->Speed;
 	Move->MaxSpeed = Data->Speed;
-	Move->Velocity = GetActorForwardVector() * Data->Speed;
+	Move->bInitialVelocityInLocalSpace = false;            // make sure
+	Move->Velocity = ShootDir * Data->Speed;           // world-space velocity
+	Move->bRotationFollowsVelocity = true;
 
 	Move->bShouldBounce = (Data->Behavior == EProjBehavior::Bouncy);
 	Move->Bounciness = 0.5f;
@@ -65,6 +71,7 @@ void AProjectile::InitFromDef(const UProjectileDef* Def, AActor* InInstigator, U
 		Move->HomingTargetComponent = HomingTarget;
 		Move->HomingAccelerationMagnitude = 8000.f;
 	}
+
 
 	if (!Data->FireSFX.IsNull())
 		UGameplayStatics::PlaySoundAtLocation(this, Data->FireSFX.LoadSynchronous(), GetActorLocation());

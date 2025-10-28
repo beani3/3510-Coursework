@@ -9,6 +9,7 @@
 #include "AC_ProjectileComponent.generated.h"
 
 class AProjectile;
+class USceneComponent;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class COURSEWORK3510_API UAC_ProjectileComponent : public UActorComponent
@@ -18,22 +19,32 @@ class COURSEWORK3510_API UAC_ProjectileComponent : public UActorComponent
 public:	
 	UAC_ProjectileComponent();
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Projectile")
-	TSubclassOf<AProjectile> ProjectileClass;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
-	FTransform MuzzleOffset;
-
-	UFUNCTION(BlueprintCallable, Category = "Projectile")
-	bool FireByDef(const UProjectileDef* Def, USceneComponent* HomingTarget = nullptr);
-
 
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
-public:	
-	// Called every frame
-	
-		
+public:
+	/** Projectile class to spawn (AProjectile or BP child) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+	TSubclassOf<AProjectile> ProjectileClass;
+
+	/** Fallback local offset if no muzzle is set */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+	FTransform MuzzleOffset;
+
+	/** Explicitly set the muzzle from BP (BeginPlay of your kart) */
+	UFUNCTION(BlueprintCallable, Category = "Projectile")
+	void SetMuzzle(USceneComponent* InMuzzle) { MuzzleComponent = InMuzzle; }
+
+	/** Fire from the muzzle (or fallback) */
+	UFUNCTION(BlueprintCallable, Category = "Projectile")
+	bool FireByDef(const UProjectileDef* Def, USceneComponent* HomingTarget = nullptr);
+
+private:
+	UPROPERTY() USceneComponent* MuzzleComponent = nullptr; // cached after SetMuzzle
+
+	USceneComponent* ResolveMuzzle() const;
+	FTransform BuildSpawnTM() const;
 };
+
