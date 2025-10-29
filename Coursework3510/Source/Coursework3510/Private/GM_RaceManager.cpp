@@ -92,6 +92,15 @@ void AGM_RaceManager::StartRaceWithCountdown(float CountdownSeconds)
 	}
 }
 
+float AGM_RaceManager::GetCountdownRemaining() const
+{
+	if (GetWorld())
+	{
+		return GetWorld()->GetTimerManager().GetTimerRemaining(TimerHandle_Countdown);
+	}
+	return 0.f;
+}
+
 void AGM_RaceManager::OnCountdownComplete()
 {
 	StartRace();
