@@ -6,6 +6,9 @@
 #include "GameFramework/GameModeBase.h"
 #include "GM_RaceManager.generated.h"
 
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnStarted);
+
 UCLASS()
 class COURSEWORK3510_API AGM_RaceManager : public AGameModeBase
 {
@@ -64,6 +67,9 @@ public:
 	// Blueprint hooks
 	UFUNCTION(BlueprintImplementableEvent, Category = "Race")
 	void BP_OnRaceStarted();
+
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnStarted OnStarted;
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Race")
 	void BP_OnRaceEnded();

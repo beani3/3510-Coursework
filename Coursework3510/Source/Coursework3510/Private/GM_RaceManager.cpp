@@ -71,6 +71,7 @@ void AGM_RaceManager::StartRace()
 		FString Message = FString::Printf(TEXT("GM_RaceManager: Race started"));
 		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, Message);
 	}
+	OnStarted.Broadcast();
 }
 
 void AGM_RaceManager::StartRaceWithCountdown(float CountdownSeconds)
