@@ -13,6 +13,18 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDamaged, float, DamageAmount);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHealed, float, HealAmount);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDied);
 
+USTRUCT(BlueprintType)
+struct FHealthComponentConfig
+{
+	GENERATED_BODY()
+	UPROPERTY(EditAnywhere, BlueprintReadWrite) float MaxHealth = 100.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite) bool  bCanDie = true;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite) bool  bAutoRegen = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite) float RegenPerSecond = 5.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite) float RegenDelay = 3.f;
+};
+
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class COURSEWORK3510_API UAC_HealthComponent : public UActorComponent
 {
@@ -92,8 +104,11 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Health")
 	bool IsAlive() const { return !bIsDead; }
 
+	UFUNCTION(BlueprintCallable, Category = "Health")
+	void ApplyConfig(const FHealthComponentConfig& InCfg, bool bResetHealth = true);
+
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-		
+	
 };

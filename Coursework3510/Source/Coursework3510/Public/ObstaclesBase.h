@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "ObstacleData.h"
+#include "AC_HealthComponent.h"
 #include "ObstaclesBase.generated.h"
 
 
@@ -33,6 +35,12 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Obstacle|Collision") //Collision box for obstacle hit detection
 	UBoxComponent* Collision;
 
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Obstacle|Data")
+	UObstacleData* Data = nullptr;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Obstacle|Health")
+	UAC_HealthComponent* HealthComp;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Obstacle|FX") //Plays Sound on hit, optional, can be set per obstacle instance
 	USoundBase* HitSFX = nullptr;
 
@@ -57,10 +65,14 @@ protected:
 
 	void PlayEffectsAtHit(const FHitResult& Hit); //Plays the hit FX at the hit location
 
+	void ApplyData();
+	UFUNCTION()
+	void OnDied_Handle();
+
 
 
 public:	
-	virtual void Tick(float DeltaTime) override;
+	//virtual void Tick(float DeltaTime) override;
 
 
 	UFUNCTION(BlueprintCallable, Category = "Obstacle") //Allows access to collision component

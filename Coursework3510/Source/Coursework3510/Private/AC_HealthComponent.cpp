@@ -14,7 +14,6 @@ UAC_HealthComponent::UAC_HealthComponent()
 	// ...
 }
 
-
 // Called when the game starts
 void UAC_HealthComponent::BeginPlay()
 {
@@ -100,5 +99,19 @@ void UAC_HealthComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 	}
 
 	// ...
+}
+
+void UAC_HealthComponent::ApplyConfig(const FHealthComponentConfig& InCfg, bool bResetHealth)
+{
+	MaxHealth = FMath::Max(1.f, InCfg.MaxHealth);
+	bCanDie = InCfg.bCanDie;
+	bAutoRegen = InCfg.bAutoRegen;
+	RegenPerSecond = InCfg.RegenPerSecond;
+	RegenDelay = InCfg.RegenDelay;
+
+	if (bResetHealth)
+	{
+		InitializeHealth(); // sets Health=MaxHealth, clears dead, broadcasts
+	}
 }
 
