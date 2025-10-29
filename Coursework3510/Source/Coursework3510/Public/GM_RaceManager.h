@@ -8,6 +8,7 @@
 
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnStarted);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnFinished);
 
 UCLASS()
 class COURSEWORK3510_API AGM_RaceManager : public AGameModeBase
@@ -73,6 +74,9 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnStarted OnStarted;
+
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnStarted OnFinished;
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Race")
 	void BP_OnRaceEnded();

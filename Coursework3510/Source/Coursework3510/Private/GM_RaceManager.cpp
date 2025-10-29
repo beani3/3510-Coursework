@@ -196,11 +196,13 @@ void AGM_RaceManager::FinishRaceInternal()
 		FString Message = FString::Printf(TEXT("GM_RaceManager: Race ended (elapsed %f)"), ElapsedTime);
 		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, Message);
 	}
-
+	OnFinished.Broadcast();
 }
 
 void AGM_RaceManager::EndRace()
 {
 	FinishRaceInternal();
 }
+
+
 
