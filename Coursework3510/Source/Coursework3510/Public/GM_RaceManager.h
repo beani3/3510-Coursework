@@ -64,6 +64,9 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Race|UI")
 	float GetCountdownRemaining() const;
 
+	UFUNCTION(BlueprintPure, Category = "Race|UI")
+	float GetElapsedTime() const;
+
 	// Blueprint hooks
 	UFUNCTION(BlueprintImplementableEvent, Category = "Race")
 	void BP_OnRaceStarted();
