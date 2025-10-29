@@ -122,14 +122,10 @@ void AMyPlayerCar::LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints,
 				}
 			}
 		}
-<<<<<<< HEAD
-		if (RaceManager)
-		{
-			//RaceManager->OnPlayerCrossedStartFinish(Lap);
-		}
 
-=======
->>>>>>> 4f850fb39a5fcd2cc5f82809b4cdec3afb459117
+		
+
+
 	}
 
 	else if (_CheckpointNumber == CurrentCheckpoint + 1)
