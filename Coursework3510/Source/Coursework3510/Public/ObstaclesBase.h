@@ -1,7 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
-
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "ObstacleData.h"
@@ -9,8 +6,15 @@
 #include "ObstaclesBase.generated.h"
 
 
-class UNiagaraSystem;
-class UStaticMeshComponent;
+/*
+* Base class for all obstacles in the game.
+* Handles mesh, collision, health, and hit effects.
+* Looking to use a points system for obstacles in future.
+* Trying to make it as modular and reusable as possible.
+*/
+
+class UNiagaraSystem; //forward declaration for Niagara
+class UStaticMeshComponent; //same thing for static mesh
 
 UCLASS()
 class COURSEWORK3510_API AObstaclesBase : public AActor
@@ -72,9 +76,6 @@ protected:
 
 
 public:	
-	//virtual void Tick(float DeltaTime) override;
-
-
 	UFUNCTION(BlueprintCallable, Category = "Obstacle") //Allows access to collision component
 	UBoxComponent* GetCollision() const { return Collision; }
 

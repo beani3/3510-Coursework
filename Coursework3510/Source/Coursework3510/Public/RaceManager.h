@@ -15,7 +15,6 @@ class COURSEWORK3510_API ARaceManager : public AActor
 	GENERATED_BODY()
 	
 public:	
-	// Sets default values for this actor's properties
 	ARaceManager();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Race") //The amount of laps needed to win + 1
@@ -39,7 +38,6 @@ public:
 
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -55,7 +53,6 @@ protected:
 	void BP_OnRaceFinished(float FinalTime);
 
 public:	
-	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
 };
