@@ -16,14 +16,14 @@ void UAC_ProjectileComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Default projectile class if not assigned
-	if (!ProjectileClass)
+	
+	if (!ProjectileClass) // Default to AProjectile if none set
 	{
 		ProjectileClass = AProjectile::StaticClass();
 	}
 }
 
-USceneComponent* UAC_ProjectileComponent::ResolveMuzzle() const
+USceneComponent* UAC_ProjectileComponent::ResolveMuzzle() const // Resolve the muzzle component
 {
 	if (MuzzleComponent)
 		return MuzzleComponent;
@@ -32,7 +32,7 @@ USceneComponent* UAC_ProjectileComponent::ResolveMuzzle() const
 	{
 		// Try a component literally named "Muzzle"
 		if (USceneComponent* ByName = Cast<USceneComponent>(Owner->GetDefaultSubobjectByName(TEXT("Muzzle"))))
-			return ByName;
+			return ByName; 
 
 		// Try to find any ArrowComponent (optional)
 		if (USceneComponent* Arrow = Cast<USceneComponent>(Owner->FindComponentByClass<USceneComponent>()))

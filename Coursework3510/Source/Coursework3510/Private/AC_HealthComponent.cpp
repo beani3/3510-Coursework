@@ -7,79 +7,80 @@
 // Sets default values for this component's properties
 UAC_HealthComponent::UAC_HealthComponent()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
+	
 	PrimaryComponentTick.bCanEverTick = true;
 
-	// ...
+
 }
 
 // Called when the game starts
 void UAC_HealthComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Initialize health on begin play
 	InitializeHealth();
 
 	// ...
 	
 }
-
+// Initialize health to max health
 void UAC_HealthComponent::InitializeHealth()
 {
 	Health = MaxHealth;
 	bIsDead = false;
 	OnHealthChanged.Broadcast(Health, 0.f);
 }
-
+// Apply damage to the health component
 void UAC_HealthComponent::ApplyDamage(float DamageAmount)
 {
 	if (bIsDead || DamageAmount <= 0.f)
 		return;
 
-	const float OldHealth = Health;
-	Health = FMath::Clamp(Health - DamageAmount, 0.f, MaxHealth);
+	const float OldHealth = Health;// Store old health
+	Health = FMath::Clamp(Health - DamageAmount, 0.f, MaxHealth);// Reduce health
 	const float HealthChange = Health - OldHealth; // Negative if damaged
 
-	TimeSinceLastDamage = 0.f;
-	OnDamaged.Broadcast(DamageAmount);
-	OnHealthChanged.Broadcast(Health, HealthChange);
+	TimeSinceLastDamage = 0.f; // Reset regen timer
+	OnDamaged.Broadcast(DamageAmount);// Broadcast damage event
+	OnHealthChanged.Broadcast(Health, HealthChange);// Broadcast health changed event
 
-	if (Health <= 0.f && bCanDie && !bIsDead)
+	if (Health <= 0.f && bCanDie && !bIsDead)// Check for death 
 	{
-		bIsDead = true;
-		OnDied.Broadcast();
+		bIsDead = true; // Set dead flag
+		OnDied.Broadcast();// Broadcast death event
 	}
 }
 
-void UAC_HealthComponent::Heal(float HealAmount)
+void UAC_HealthComponent::Heal(float HealAmount)// Heal the health component
 {
-	if (bIsDead || HealAmount <= 0.f)
+	if (bIsDead || HealAmount <= 0.f)// Cannot heal if dead or invalid amount
 		return;
 
-	const float OldHealth = Health;
-	Health = FMath::Clamp(Health + HealAmount, 0.f, MaxHealth);
+	const float OldHealth = Health;// Store old health
+	Health = FMath::Clamp(Health + HealAmount, 0.f, MaxHealth);// Increase health
 	const float HealthChange = Health - OldHealth; // Positive if healed
 
-	if (HealthChange > 0.f)
+	if (HealthChange > 0.f)// Only broadcast if there was an actual Health change
 	{
-		OnHealed.Broadcast(HealthChange);
-		OnHealthChanged.Broadcast(Health, HealthChange);
+		OnHealed.Broadcast(HealthChange);// Broadcast healed event
+		OnHealthChanged.Broadcast(Health, HealthChange);// Broadcast health changed event
 	}
 }
 
-void UAC_HealthComponent::SetMaxHealth(float NewMax, bool bClampCurrent)
+void UAC_HealthComponent::SetMaxHealth(float NewMax, bool bClampCurrent)// Set maximum health
 {
-	MaxHealth = FMath::Max(1.f, NewMax);
+	MaxHealth = FMath::Max(1.f, NewMax);// Ensure max health is at least 1
 	if (bClampCurrent)
 	{
-		Health = FMath::Clamp(Health, 0.f, MaxHealth);
-		OnHealthChanged.Broadcast(Health, 0.f);
+		Health = FMath::Clamp(Health, 0.f, MaxHealth);// Clamp current health to new max
+		OnHealthChanged.Broadcast(Health, 0.f);// Broadcast health changed event with no change
 	}
 }
 
-float UAC_HealthComponent::GetHealthPercent() const
+float UAC_HealthComponent::GetHealthPercent() const// Get current health as a percentage of max health
 {
-	return (MaxHealth > 0.f) ? (Health / MaxHealth) : 0.f;
+	return (MaxHealth > 0.f) ? (Health / MaxHealth) : 0.f;// Avoid division by zero
 }
 
 

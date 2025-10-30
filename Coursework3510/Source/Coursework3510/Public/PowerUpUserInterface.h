@@ -25,11 +25,11 @@ class COURSEWORK3510_API IPowerUpUserInterface
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
 public:
-    // Buffs (generic)
+    // Buffs 
     UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "PowerUps|Buffs")
     void ApplyBuff(const UBuffDef* Buff);
 
-    // Projectiles (unchanged)
+    // Projectiles 
     UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "PowerUps|Projectiles")
     void FireProjectileFromDef(const UProjectileDef* Def);
 };

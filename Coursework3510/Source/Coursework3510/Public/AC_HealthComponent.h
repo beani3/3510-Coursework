@@ -37,73 +37,96 @@ public:
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
-	// --- Health state ---
+
+	//  Health state
+
+	//Maximum health value
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health")
 	float MaxHealth = 100.f;
 
+	//Current health value
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
 	float Health = 100.f;
 
+
+	// Can Die?
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health")
 	bool bCanDie = true;
 
+	// Is Dead?
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
 	bool bIsDead = false;
 
-	// --- Auto Regen ---
+	// Auto Regen
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Regen")
 	bool bAutoRegen = false;
 
+	// Regen per seconds
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Regen")
 	float RegenPerSecond = 5.f;
 
+	// Regen delay after taking damage
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Regen")
 	float RegenDelay = 3.f;
 
+	// Time since last damage taken
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Regen")
 	float TimeSinceLastDamage = 0.f;
 
 public:	
 
-	// --- Delegates ---
+	// --- Events ---
+	// Health changed event
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnHealthChanged OnHealthChanged;
 
+	// Damaged event
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnDamaged OnDamaged;
 
+	// Healed event
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnHealed OnHealed;
 
+	// Died event
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnDied OnDied;
 
-	// --- Core API ---
+	// Initializes health to max health
 	UFUNCTION(BlueprintCallable, Category = "Health")
 	void InitializeHealth();
 
+	// Apply damage to the health component
 	UFUNCTION(BlueprintCallable, Category = "Health")
 	void ApplyDamage(float DamageAmount);
 
+	// Heal the health component
 	UFUNCTION(BlueprintCallable, Category = "Health")
 	void Heal(float HealAmount);
 
+	// Set Max Health
 	UFUNCTION(BlueprintCallable, Category = "Health")
 	void SetMaxHealth(float NewMax, bool bClampCurrent = true);
 
-	// --- Getters (Pure Blueprint nodes) ---
+	//  Getters (Pure Blueprint nodes) 
+
+	// Get health percentage (0.0 - 1.0)
 	UFUNCTION(BlueprintPure, Category = "Health")
 	float GetHealthPercent() const;
 
+	// Get current health value
 	UFUNCTION(BlueprintPure, Category = "Health")
 	float GetHealth() const { return Health; }
 
+	// Get maximum health value
 	UFUNCTION(BlueprintPure, Category = "Health")
 	float GetMaxHealth() const { return MaxHealth; }
 
+	// Check if the actor is alive
 	UFUNCTION(BlueprintPure, Category = "Health")
 	bool IsAlive() const { return !bIsDead; }
 
+	// Apply a configuration to the health component
 	UFUNCTION(BlueprintCallable, Category = "Health")
 	void ApplyConfig(const FHealthComponentConfig& InCfg, bool bResetHealth = true);
 

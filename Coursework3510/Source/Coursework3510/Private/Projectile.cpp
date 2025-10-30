@@ -12,18 +12,19 @@ AProjectile::AProjectile()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
-	// Root collision (UpdatedComponent must be a collider)
+	// Collision
 	Collision = CreateDefaultSubobject<USphereComponent>(TEXT("Collision"));
 	Collision->InitSphereRadius(16.f);
 	Collision->SetCollisionProfileName(TEXT("BlockAllDynamic")); // blocks world + pawns
 	Collision->SetGenerateOverlapEvents(false);
 	SetRootComponent(Collision);
 
+	// Mesh
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));	
 	Mesh->SetupAttachment(Collision);
 	Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-
+	// Movement
 	Move = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("Move"));
 	Move->SetUpdatedComponent(Collision);
 	Move->bRotationFollowsVelocity = true;
@@ -35,30 +36,34 @@ AProjectile::AProjectile()
 void AProjectile::BeginPlay()
 {
 	Super::BeginPlay();
-	Collision->OnComponentHit.AddDynamic(this, &AProjectile::OnHit);
-	Move->OnProjectileBounce.AddDynamic(this, &AProjectile::OnBounce);
 
-	if (Data && Data->LifeSeconds > 0.f)
+	
+	Collision->OnComponentHit.AddDynamic(this, &AProjectile::OnHit);// register hit event
+	Move->OnProjectileBounce.AddDynamic(this, &AProjectile::OnBounce);// register bounce event
+
+	if (Data && Data->LifeSeconds > 0.f)// set lifespan
 		SetLifeSpan(Data->LifeSeconds);
 }
 
+// Initialize from definition
 void AProjectile::InitFromDef(const UProjectileDef* Def, AActor* InInstigator, USceneComponent* HomingTarget)
 {
 	Data = Def; InstigatorActor = InInstigator; check(Data);
 
-	if (UStaticMesh* M = Data->Mesh.LoadSynchronous())         Mesh->SetStaticMesh(M);
-	if (UMaterialInterface* Mat = Data->MeshMaterial.LoadSynchronous()) Mesh->SetMaterial(0, Mat);
+	if (UStaticMesh* M = Data->Mesh.LoadSynchronous())         Mesh->SetStaticMesh(M); // set mesh
+	if (UMaterialInterface* Mat = Data->MeshMaterial.LoadSynchronous()) Mesh->SetMaterial(0, Mat);// set material
 
-	if (InstigatorActor) Collision->IgnoreActorWhenMoving(InstigatorActor, true);
+	if (InstigatorActor) Collision->IgnoreActorWhenMoving(InstigatorActor, true);// ignore instigator for collision
 
-	// Use the ACTUAL spawn transform's forward (world-space)
+	// get shoot direction
 	const FVector ShootDir = GetActorTransform().GetRotation().GetForwardVector().GetSafeNormal();
 
-	Move->InitialSpeed = Data->Speed;
-	Move->MaxSpeed = Data->Speed;
-	Move->bInitialVelocityInLocalSpace = false;            // make sure
-	Move->Velocity = ShootDir * Data->Speed;           // world-space velocity
-	Move->bRotationFollowsVelocity = true;
+	// configure movement
+	Move->InitialSpeed = Data->Speed; // initial speed
+	Move->MaxSpeed = Data->Speed; // max speed
+	Move->bInitialVelocityInLocalSpace = false;          // velocity is in world-space
+	Move->Velocity = ShootDir * Data->Speed; // set velocity
+	Move->bRotationFollowsVelocity = true; //rotate to face direction
 
 	Move->bShouldBounce = (Data->Behavior == EProjBehavior::Bouncy);
 	Move->Bounciness = 0.5f;
@@ -72,7 +77,7 @@ void AProjectile::InitFromDef(const UProjectileDef* Def, AActor* InInstigator, U
 		Move->HomingAccelerationMagnitude = 8000.f;
 	}
 
-
+	// Play fire sound ( not used yet)
 	if (!Data->FireSFX.IsNull())
 		UGameplayStatics::PlaySoundAtLocation(this, Data->FireSFX.LoadSynchronous(), GetActorLocation());
 }
@@ -91,8 +96,10 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* Other, UPrimitiveC
 {
 	if (!Move->bShouldBounce || !ShouldBounceOff(Other))
 	{
+		// Play impact sound (not used yet)
 		if (!Data->ImpactSFX.IsNull())
 			UGameplayStatics::PlaySoundAtLocation(this, Data->ImpactSFX.LoadSynchronous(), Hit.ImpactPoint);
+		// Destroy projectile
 		Die();
 	}
 }
@@ -101,13 +108,15 @@ void AProjectile::OnBounce(const FHitResult& Impact, const FVector& Vel)
 {
 	if (++BounceCount >= Data->MaxBounces)
 	{
+		// Play impact sound (not used yet)
 		if (!Data->ImpactSFX.IsNull())
 			UGameplayStatics::PlaySoundAtLocation(this, Data->ImpactSFX.LoadSynchronous(), Impact.ImpactPoint);
+		// Destroy projectile
 		Die();
 	}
 }
 
-void AProjectile::Die()
+void AProjectile::Die() // destroy projectile
 {
 	Destroy();
 }

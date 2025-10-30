@@ -25,26 +25,30 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	/** Projectile class to spawn (AProjectile or BP child) */
+	// Projectile class to spawn
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
 	TSubclassOf<AProjectile> ProjectileClass;
 
-	/** Fallback local offset if no muzzle is set */
+	// Fallback local offset if no muzzle is set 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
 	FTransform MuzzleOffset;
 
-	/** Explicitly set the muzzle from BP (BeginPlay of your kart) */
+	// Explicitly set the muzzle from BP
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
 	void SetMuzzle(USceneComponent* InMuzzle) { MuzzleComponent = InMuzzle; }
 
-	/** Fire from the muzzle (or fallback) */
+	// Fire from the muzzle
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
 	bool FireByDef(const UProjectileDef* Def, USceneComponent* HomingTarget = nullptr);
 
 private:
-	UPROPERTY() USceneComponent* MuzzleComponent = nullptr; // cached after SetMuzzle
+	// Muzzle component
+	UPROPERTY() USceneComponent* MuzzleComponent = nullptr; 
 
+	// Resolve the muzzle component
 	USceneComponent* ResolveMuzzle() const;
+
+	// Build the spawn transform
 	FTransform BuildSpawnTM() const;
 };
 
