@@ -3,22 +3,18 @@
 #include "Engine/World.h"
 #include "TimerManager.h"
 
-// Sets default values
 ARaceManager::ARaceManager()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 }
 
-// Called when the game starts or when spawned
 void ARaceManager::BeginPlay()
 {
 	Super::BeginPlay();
 	
 }
 
-// Called every frame
 void ARaceManager::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -60,8 +56,8 @@ void ARaceManager::NotifyLapCompleted(int32 NewLap)
 {
 	if (!bRaceRunning || bRaceFinished) return;
 
-	// If the car just completed/entered the final lap at Start/Finish, end race
-	if (NewLap >= TotalLaps)
+
+	if (NewLap >= TotalLaps)// If the car just completed/entered the final lap at Start/Finish, end race
 	{
 		FinishRace();
 	}
@@ -80,6 +76,5 @@ void ARaceManager::FinishRace()
 		World->GetTimerManager().ClearTimer(TimerHandle_Tick);
 	}
 
-	// Let BP show results (pass final time)
 	BP_OnRaceFinished(ElapsedTime);
 }

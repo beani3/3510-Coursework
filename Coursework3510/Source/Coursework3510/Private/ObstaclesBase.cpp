@@ -1,4 +1,3 @@
-// ObstaclesBase.cpp (key changes only)
 #include "ObstaclesBase.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -10,33 +9,33 @@ AObstaclesBase::AObstaclesBase()
 {
     PrimaryActorTick.bCanEverTick = true;
 
-    Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
+    Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh")); //Mesh component set up
     RootComponent = Mesh;
     Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-    Collision = CreateDefaultSubobject<UBoxComponent>(TEXT("Collision"));
+    Collision = CreateDefaultSubobject<UBoxComponent>(TEXT("Collision")); //collision set up
     Collision->SetupAttachment(Mesh);
     Collision->SetCollisionProfileName(TEXT("BlockAllDynamic"));
     Collision->SetGenerateOverlapEvents(false);
     Collision->OnComponentHit.AddDynamic(this, &AObstaclesBase::OnCollisionHit);
 
-    //NEW: health subobject (always present; enabled by Data)
-    HealthComp = CreateDefaultSubobject<UAC_HealthComponent>(TEXT("HealthComp"));
+
+	HealthComp = CreateDefaultSubobject<UAC_HealthComponent>(TEXT("HealthComp")); //health component set up
     HealthComp->SetComponentTickEnabled(true);
 }
 
 void AObstaclesBase::OnConstruction(const FTransform& Transform)
 {
     Super::OnConstruction(Transform);
-    ApplyData(); //NEW
+	ApplyData(); //apply data in editor
 }
 
 void AObstaclesBase::BeginPlay()
 {
     Super::BeginPlay();
-    ApplyData(); //ensure runtime matches editor
+	ApplyData(); //apply data on begin play
 
-    if (HealthComp)
+	if (HealthComp) //bind death event
     {
         HealthComp->OnDied.AddDynamic(this, &AObstaclesBase::OnDied_Handle);
     }
@@ -44,52 +43,52 @@ void AObstaclesBase::BeginPlay()
 
 void AObstaclesBase::ApplyData()
 {
-    if (!Data) return;
+	if (!Data) return; // No data to apply
 
-    // Mesh & materials
     if (Data->Mesh)
     {
         Mesh->SetStaticMesh(Data->Mesh);
-        // Materials (optional)
         for (int32 i = 0; i < Data->OverrideMaterials.Num(); ++i)
         {
             Mesh->SetMaterial(i, Data->OverrideMaterials[i]);
         }
     }
 
-    // Transform offsets
-    Mesh->SetRelativeScale3D(Data->RelativeScale3D);
+	Mesh->SetRelativeScale3D(Data->RelativeScale3D); //Transofrm overrides
     Mesh->SetRelativeRotation(Data->RelativeRotation);
 
-    // Collision / physics
+
     Mesh->SetCollisionProfileName(Data->CollisionProfileName);
     Mesh->SetMobility(Data->Mobility);
 
-    const bool bSim = Data->bSimulatePhysics && (Data->Mobility == EComponentMobility::Movable);
-    Mesh->SetSimulatePhysics(bSim);
 
-    if (Data->PhysMatOverride)
+	const bool bSim = Data->bSimulatePhysics && (Data->Mobility == EComponentMobility::Movable); // Determine if physics should be simulated
+	Mesh->SetSimulatePhysics(bSim); // Physics simulation
+
+	if (Data->PhysMatOverride) // Physical material override
         Mesh->SetPhysMaterialOverride(Data->PhysMatOverride);
-    if (Data->bOverrideMass && bSim)
+
+	if (Data->bOverrideMass && bSim) // Mass override
         Mesh->SetMassOverrideInKg(NAME_None, FMath::Max(0.1f, Data->MassInKg), true);
 
-    // Auto-size collision to mesh bounds (same as your current logic)
-    if (bAutoSizeCollisionToMeshBounds && Collision && Mesh->GetStaticMesh())
+
+	if (bAutoSizeCollisionToMeshBounds && Collision && Mesh->GetStaticMesh()) // Auto size collision box to mesh bounds
     {
         const FVector Extent = Mesh->Bounds.BoxExtent;
         Collision->SetBoxExtent(Extent);
         Collision->SetRelativeLocation(FVector::ZeroVector);
     }
 
-    // FX overrides from Data (fallback to actor properties if Data fields are null)
-    HitVFX = Data->HitVFX ? Data->HitVFX : HitVFX;
+
+	HitVFX = Data->HitVFX ? Data->HitVFX : HitVFX; // FX overrides
     HitSFX = Data->HitSFX ? Data->HitSFX : HitSFX;
     VFXScale = (Data->VFXScale > 0.f) ? Data->VFXScale : VFXScale;
 
-    // HEALTH
-    if (HealthComp)
+
+
+	if (HealthComp) // Health configuration
     {
-        if (Data->Health.bHasHealth)
+		if (Data->Health.bHasHealth) // Apply health config if obstacle has health
         {
             FHealthComponentConfig Cfg;
             Cfg.MaxHealth = Data->Health.MaxHealth;
@@ -97,7 +96,7 @@ void AObstaclesBase::ApplyData()
             Cfg.bAutoRegen = Data->Health.bAutoRegen;
             Cfg.RegenPerSecond = Data->Health.RegenPerSecond;
             Cfg.RegenDelay = Data->Health.RegenDelay;
-            HealthComp->ApplyConfig(Cfg, /*bResetHealth*/ true);
+            HealthComp->ApplyConfig(Cfg, true);
             HealthComp->SetComponentTickEnabled(true);
         }
         else
@@ -107,13 +106,11 @@ void AObstaclesBase::ApplyData()
     }
 }
 
-void AObstaclesBase::OnCollisionHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
-    UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+void AObstaclesBase::OnCollisionHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
     HandlePostEffectsOnHit(OtherActor, OtherComp, NormalImpulse, Hit);
 
-    //NEW: convert impact into self-damage if this prop has health
-    if (Data && Data->Health.bHasHealth && HealthComp)
+	if (Data && Data->Health.bHasHealth && HealthComp) // Apply damage based on impact impulse
     {
         const float Damage = NormalImpulse.Size() * Data->Health.ImpactDamageScale;
         if (Damage > 0.f)
@@ -123,15 +120,14 @@ void AObstaclesBase::OnCollisionHit(UPrimitiveComponent* HitComponent, AActor* O
     }
 }
 
-void AObstaclesBase::HandlePostEffectsOnHit(AActor* OtherActor, UPrimitiveComponent* OtherComp,
-    const FVector& NormalImpulse, const FHitResult& Hit)
+void AObstaclesBase::HandlePostEffectsOnHit(AActor* OtherActor, UPrimitiveComponent* OtherComp, const FVector& NormalImpulse, const FHitResult& Hit)
 {
-    if (bFXPlayed) return; // your existing one-shot guard
+	if (bFXPlayed) return; // Prevent multiple FX plays
     bFXPlayed = true;
     PlayEffectsAtHit(Hit);
 }
 
-void AObstaclesBase::PlayEffectsAtHit(const FHitResult& Hit)
+void AObstaclesBase::PlayEffectsAtHit(const FHitResult& Hit) // Plays hit effects at the impact location
 {
     UWorld* World = GetWorld();
     if (!World) return;
@@ -146,7 +142,7 @@ void AObstaclesBase::PlayEffectsAtHit(const FHitResult& Hit)
     }
 }
 
-void AObstaclesBase::OnDied_Handle()
+void AObstaclesBase::OnDied_Handle() // Handles obstacle death
 {
     if (!Data) { Destroy(); return; }
 

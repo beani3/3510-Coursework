@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #include "GM_RaceManager.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
@@ -22,8 +20,8 @@ void AGM_RaceManager::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Count active player controllers
-	TotalPlayers = 0;
+
+	TotalPlayers = 0;// Count active player controllers
 	if (GetWorld())
 	{
 		for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
@@ -37,7 +35,7 @@ void AGM_RaceManager::BeginPlay()
 	ElapsedTime = 0.f;
 }
 
-void AGM_RaceManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
+void AGM_RaceManager::EndPlay(const EEndPlayReason::Type EndPlayReason) //when the game ends
 {
 	if (GetWorld())
 	{
@@ -46,7 +44,7 @@ void AGM_RaceManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
-void AGM_RaceManager::StartRace()
+void AGM_RaceManager::StartRace() //starts the race
 {
 	if (bRaceRunning || bRaceFinished) return;
 
@@ -55,7 +53,6 @@ void AGM_RaceManager::StartRace()
 	bRaceFinished = false;
 	PlayersFinished = 0;
 
-	// start tick timer (0.05s tick matches your existing pattern)
 	if (GetWorld())
 	{
 		GetWorld()->GetTimerManager().SetTimer(TimerHandle_Tick, this, &AGM_RaceManager::TickTimer, 0.05f, true);
@@ -65,7 +62,7 @@ void AGM_RaceManager::StartRace()
 		}
 	}
 
-	BP_OnRaceStarted();
+	BP_OnRaceStarted(); //Notifier, UI updates, etc.
 	if (GEngine)
 	{
 		FString Message = FString::Printf(TEXT("GM_RaceManager: Race started"));
@@ -74,7 +71,7 @@ void AGM_RaceManager::StartRace()
 	OnStarted.Broadcast();
 }
 
-void AGM_RaceManager::StartRaceWithCountdown(float CountdownSeconds)
+void AGM_RaceManager::StartRaceWithCountdown(float CountdownSeconds) //starts the race with a timer editabl in blueprints
 {
 	if (bRaceRunning || bRaceFinished) return;
 	if (CountdownSeconds <= 0.f)
@@ -93,7 +90,7 @@ void AGM_RaceManager::StartRaceWithCountdown(float CountdownSeconds)
 	}
 }
 
-float AGM_RaceManager::GetCountdownRemaining() const
+float AGM_RaceManager::GetCountdownRemaining() const //returns the time remaining in the countdown
 {
 	if (GetWorld())
 	{
@@ -102,7 +99,7 @@ float AGM_RaceManager::GetCountdownRemaining() const
 	return 0.f;
 }
 
-float AGM_RaceManager::GetElapsedTime() const
+float AGM_RaceManager::GetElapsedTime() const //returns the elapsed time since the race started
 {
 	if (GetWorld())
 	{
@@ -111,7 +108,7 @@ float AGM_RaceManager::GetElapsedTime() const
 	return 0.f;
 }
 
-void AGM_RaceManager::OnCountdownComplete()
+void AGM_RaceManager::OnCountdownComplete() //called when the countdown completes
 {
 	StartRace();
 }
@@ -122,22 +119,20 @@ void AGM_RaceManager::TickTimer()
 	ElapsedTime += 0.05f;
 }
 
-void AGM_RaceManager::NotifyPlayerFinished()
+void AGM_RaceManager::NotifyPlayerFinished() //called when a player finishes the race
 {
 	if (!bRaceRunning || bRaceFinished) return;
 
 	PlayersFinished++;
 
-	// Fire a blueprint event for UI; pass finish order and current time
-	BP_OnPlayerFinished(PlayersFinished, ElapsedTime);
+	BP_OnPlayerFinished(PlayersFinished, ElapsedTime); // Notifier, UI updates, etc.
 	if (GEngine)
 	{
 		FString Message = FString::Printf(TEXT("GM_RaceManager: Player finished (%d/%d) at time %f"), PlayersFinished, TotalPlayers, ElapsedTime);
 		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, Message);
 	}
 
-	// First finisher: start courtesy timer if configured
-	if (PlayersFinished == 1 && CourtesyTime > 0.f && GetWorld())
+	if (PlayersFinished == 1 && CourtesyTime > 0.f && GetWorld()) //Courtesy timer starts
 	{
 		GetWorld()->GetTimerManager().SetTimer(TimerHandle_Courtesy, this, &AGM_RaceManager::OnCourtesyExpired, CourtesyTime, false);
 		if (GEngine)
@@ -147,14 +142,14 @@ void AGM_RaceManager::NotifyPlayerFinished()
 		}
 	}
 
-	// If everyone finished, end immediately
-	if (PlayersFinished >= TotalPlayers)
+
+	if (PlayersFinished >= TotalPlayers)// If everyone finished, end immediately
 	{
 		FinishRaceInternal();
 	}
 }
 
-void AGM_RaceManager::OnCourtesyExpired()
+void AGM_RaceManager::OnCourtesyExpired() //called when the courtesy timer expires
 {
 	if (GEngine)
 	{
@@ -164,7 +159,7 @@ void AGM_RaceManager::OnCourtesyExpired()
 	FinishRaceInternal();
 }
 
-void AGM_RaceManager::OnRaceDurationExpired()
+void AGM_RaceManager::OnRaceDurationExpired() //called when max time reached
 {
 	if (GEngine)
 	{
@@ -178,7 +173,6 @@ void AGM_RaceManager::FinishRaceInternal()
 {
 	if (bRaceFinished) return;
 
-	// stop all timers
 	if (GetWorld())
 	{
 		GetWorld()->GetTimerManager().ClearTimer(TimerHandle_Tick);

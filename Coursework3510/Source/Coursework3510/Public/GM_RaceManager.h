@@ -1,14 +1,11 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
-
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
 #include "GM_RaceManager.generated.h"
 
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnStarted);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnFinished);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnStarted); //
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnFinished); //
 
 UCLASS()
 class COURSEWORK3510_API AGM_RaceManager : public AGameModeBase
@@ -18,71 +15,64 @@ class COURSEWORK3510_API AGM_RaceManager : public AGameModeBase
 public:
 	AGM_RaceManager();
 
-	// Number of laps required to finish (player lap counting is 1-based in your pawn)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Race")
-	int32 TotalLaps = 4;
-
-	// Elapsed race time in seconds (updated while race running)
-	UPROPERTY(BlueprintReadOnly, Category = "Race")
-	float ElapsedTime = 0.f;
-
-	// Race state
-	UPROPERTY(BlueprintReadOnly, Category = "Race")
-	bool bRaceRunning = false;
+	int32 TotalLaps = 4; //total laps needed to win (plus one to allow for a completion of the current lap)
 
 	UPROPERTY(BlueprintReadOnly, Category = "Race")
-	bool bRaceFinished = false;
+	float ElapsedTime = 0.f; //time since the race started
 
-	// Optional: maximum allowed race duration in seconds (0 = disabled)
+	UPROPERTY(BlueprintReadOnly, Category = "Race")
+	bool bRaceRunning = false; //race state
+
+	UPROPERTY(BlueprintReadOnly, Category = "Race")
+	bool bRaceFinished = false; //race state
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Race")
-	float MaxRaceTime = 0.f;
+	float MaxRaceTime = 0.f; //How long the race will go on for (0 = unlimited)
 
-	// After first finisher, how many seconds before forcing race end
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Race")
-	float CourtesyTime = 10.f;
-
-	// Players bookkeeping
-	UPROPERTY(BlueprintReadOnly, Category = "Race")
-	int32 TotalPlayers = 1;
+	float CourtesyTime = 10.f; //time after the first finisher during which other players can finish
 
 	UPROPERTY(BlueprintReadOnly, Category = "Race")
-	int32 PlayersFinished = 0;
+	int32 TotalPlayers = 1; //how many players in the game
 
-	// API
-	UFUNCTION(BlueprintCallable, Category = "Race")
-	void StartRace();
-
-	UFUNCTION(BlueprintCallable, Category = "Race")
-	void StartRaceWithCountdown(float CountdownSeconds);
+	UPROPERTY(BlueprintReadOnly, Category = "Race")
+	int32 PlayersFinished = 0; //how many have finished so far
 
 	UFUNCTION(BlueprintCallable, Category = "Race")
-	void NotifyPlayerFinished();
+	void StartRace(); //The callable function that starts the race immeidately
 
 	UFUNCTION(BlueprintCallable, Category = "Race")
-	void EndRace();
+	void StartRaceWithCountdown(float CountdownSeconds); //starts the race with a countdown (settable in the function call)
+
+	UFUNCTION(BlueprintCallable, Category = "Race")
+	void NotifyPlayerFinished(); //call this when a player finishes
+
+	UFUNCTION(BlueprintCallable, Category = "Race")
+	void EndRace(); //ends the race immediately
 
 
 	UFUNCTION(BlueprintPure, Category = "Race|UI")
-	float GetCountdownRemaining() const;
+	float GetCountdownRemaining() const; //gets remaining countdown time
 
 	UFUNCTION(BlueprintPure, Category = "Race|UI")
-	float GetElapsedTime() const;
+	float GetElapsedTime() const; //gets the elapsed time
 
-	// Blueprint hooks
+
 	UFUNCTION(BlueprintImplementableEvent, Category = "Race")
-	void BP_OnRaceStarted();
+	void BP_OnRaceStarted(); //blueprnit event for race starting
 
 	UPROPERTY(BlueprintAssignable, Category = "Events")
-	FOnStarted OnStarted;
+	FOnStarted OnStarted; //event for started
 
 	UPROPERTY(BlueprintAssignable, Category = "Events")
-	FOnStarted OnFinished;
+	FOnStarted OnFinished; //event for finished
+	
+	UFUNCTION(BlueprintImplementableEvent, Category = "Race")
+	void BP_OnRaceEnded(); //event for end of race
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Race")
-	void BP_OnRaceEnded();
-
-	UFUNCTION(BlueprintImplementableEvent, Category = "Race")
-	void BP_OnPlayerFinished(int32 PlayerFinishOrder, float FinishTime);
+	void BP_OnPlayerFinished(int32 PlayerFinishOrder, float FinishTime); //event for player finish, used for UI
 
 protected:
 	virtual void BeginPlay() override;
@@ -93,14 +83,11 @@ protected:
 	FTimerHandle TimerHandle_Countdown;
 	FTimerHandle TimerHandle_Courtesy;
 
-	// internal tick to advance ElapsedTime
-	void TickTimer();
+	void TickTimer(); //internal timer used for elapsed time
 
-	// timers callbacks
-	void OnRaceDurationExpired();
-	void OnCourtesyExpired();
-	void OnCountdownComplete();
+	void OnRaceDurationExpired(); //caleld when race hits max time
+	void OnCourtesyExpired(); //called when courtesy time expires
+	void OnCountdownComplete(); //called when countdown finishes
 
-	// internal finish helper
 	void FinishRaceInternal();
 };
