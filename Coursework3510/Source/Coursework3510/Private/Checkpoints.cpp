@@ -11,7 +11,7 @@ ACheckpoints::ACheckpoints()
 	PrimaryActorTick.bCanEverTick = true;
 
 	Volume = CreateDefaultSubobject<UBoxComponent>(TEXT("Volume"));
-	Volume->InitBoxExtent(FVector(100.f, 400.f, 500.f));
+	Volume->InitBoxExtent(FVector(400.f, 400.f, 500.f));
 	Volume->SetCollisionResponseToAllChannels(ECR_Overlap);
 	Volume->SetupAttachment(GetRootComponent());
 
