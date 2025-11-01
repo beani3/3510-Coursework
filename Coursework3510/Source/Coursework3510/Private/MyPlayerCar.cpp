@@ -33,7 +33,7 @@ void AMyPlayerCar::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		EnhancedInputComponent->BindAction(HandbrakeAction, ETriggerEvent::Completed, this, &AMyPlayerCar::OnHandbrakeReleased);
 
 		// Pause Menu
-		EnhancedInputComponent->BindAction(PauseAction, ETriggerEvent::Started, this, &AMyPlayerCar::OnPauseEnter);
+		EnhancedInputComponent->BindAction(PauseAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::OnPauseEnter);
 	}
 }
 
@@ -91,6 +91,7 @@ void AMyPlayerCar::LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints,
 		CurrentCheckpoint += 1;
 	}
 	
+
 	else if (_CheckpointNumber < CurrentCheckpoint)
 	{
 		CurrentCheckpoint = _CheckpointNumber;

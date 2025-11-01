@@ -14,6 +14,7 @@ class COURSEWORK3510_API AMyPlayerCar : public AWheeledVehiclePawn
 public:
 	void BeginPlay();
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent);
+
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputMappingContext* DefaultMappingContext;
@@ -26,22 +27,23 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputAction* HandbrakeAction;
 
-	// Pause Menu variables
+	// Pause input action
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputAction* PauseAction;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
-	TSubclassOf<UUserWidget> PauseMenu;
-	UUserWidget* PauseMenuInst;
-
-	bool bInPauseMenu = false;
 
 	void Move(const FInputActionValue& Value);
 	void MoveEnd();
 	void OnHandbrakePressed();
 	void OnHandbrakeReleased();
 	void OnPauseEnter();
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
+	TSubclassOf<UUserWidget> UPauseMenu;
+	UUserWidget* PauseMenuInst;
 
+	bool bInPauseMenu = false;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
 	int32 Lap = 1;
 	int32 CurrentCheckpoint = 0;
 	void LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints, bool _bStartFinishLine);
