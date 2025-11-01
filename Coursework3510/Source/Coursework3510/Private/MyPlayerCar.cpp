@@ -15,8 +15,8 @@ void AMyPlayerCar::BeginPlay() {
 			ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController
 				->GetLocalPlayer())) {
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
-		}
-	}
+		};
+	};
 }
 
 void AMyPlayerCar::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) {
@@ -64,15 +64,16 @@ void AMyPlayerCar::OnHandbrakeReleased() {
 }
 
 void AMyPlayerCar::OnPauseEnter() {
-	PauseMenuInst = CreateWidget<UUserWidget>(GetWorld(), UPauseMenu);
-
-	if (bInPauseMenu) {
-		PauseMenuInst->RemoveFromViewport();
-		bInPauseMenu = false;
-	}
-
+	PauseMenuInst = CreateWidget<UUserWidget>(GetWorld(), PauseMenu);
+	APlayerController* PlayerController = Cast<APlayerController>(Controller);
+	
 	PauseMenuInst->AddToViewport();
 	bInPauseMenu = true;
+	
+	if (bInPauseMenu) {
+		PlayerController->bShowMouseCursor = true;
+		PlayerController->SetInputMode(FInputModeUIOnly());
+	}
 }
 
 void AMyPlayerCar::LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints, bool _bStartFinishLine) 

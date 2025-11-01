@@ -7,7 +7,13 @@
 		{
 			"Name": "Coursework3510",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"ChaosVehicles",
+				"Engine",
+				"UMG",
+				"AIModule"
+			]
 		}
 	],
 	"Plugins": [
