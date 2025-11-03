@@ -1,0 +1,36 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "d:\\uni stuff\\3510-coursework\\coursework3510\\plugins\\visualstudiotools\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\visualstudioblueprintdebuggerhelper\\module.visualstudioblueprintdebuggerhelper.cpp",
+        "ProvidedModule": "",
+        "PCH": "d:\\uni stuff\\3510-coursework\\coursework3510\\intermediate\\build\\win64\\x64\\coursework3510editor\\development\\unrealed\\sharedpch.unrealed.project.nonoptimized.valapi.cpp20.h.pch",
+        "Includes": [
+            "d:\\uni stuff\\3510-coursework\\coursework3510\\plugins\\visualstudiotools\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\visualstudioblueprintdebuggerhelper\\definitions.visualstudioblueprintdebuggerhelper.h",
+            "d:\\uni stuff\\3510-coursework\\coursework3510\\plugins\\visualstudiotools\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\visualstudioblueprintdebuggerhelper\\permoduleinline.gen.cpp",
+            "c:\\program files\\epic games\\ue_5.5\\engine\\source\\runtime\\core\\public\\hal\\permoduleinline.inl",
+            "d:\\uni stuff\\3510-coursework\\coursework3510\\plugins\\visualstudiotools\\source\\visualstudioblueprintdebuggerhelper\\private\\visualstudioblueprintdebuggerhelpermodule.cpp",
+            "d:\\uni stuff\\3510-coursework\\coursework3510\\plugins\\visualstudiotools\\source\\visualstudioblueprintdebuggerhelper\\private\\visualstudioblueprintdebuggerhelpermodule.h",
+            "c:\\program files\\epic games\\ue_5.5\\engine\\source\\editor\\unrealed\\public\\kismet2\\kismetdebugutilities.h",
+            "c:\\program files\\epic games\\ue_5.5\\engine\\source\\runtime\\engine\\classes\\engine\\selection.h",
+            "c:\\program files\\epic games\\ue_5.5\\engine\\source\\editor\\unrealed\\public\\selection.h",
+            "c:\\program files\\epic games\\ue_5.5\\engine\\source\\runtime\\typedelementframework\\public\\elements\\framework\\typedelementlist.h",
+            "c:\\program files\\epic games\\ue_5.5\\engine\\source\\runtime\\typedelementframework\\public\\elements\\framework\\typedelementcounter.h",
+            "c:\\program files\\epic games\\ue_5.5\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\typedelementframework\\uht\\typedelementcounter.generated.h",
+            "c:\\program files\\epic games\\ue_5.5\\engine\\source\\runtime\\typedelementruntime\\public\\elements\\framework\\typedelementselectionset.h",
+            "c:\\program files\\epic games\\ue_5.5\\engine\\source\\runtime\\typedelementruntime\\public\\elements\\framework\\typedelementinterfacecustomization.h",
+            "c:\\program files\\epic games\\ue_5.5\\engine\\source\\runtime\\typedelementruntime\\public\\elements\\framework\\typedelementlistobjectutil.h",
+            "c:\\program files\\epic games\\ue_5.5\\engine\\source\\runtime\\typedelementruntime\\public\\elements\\interfaces\\typedelementselectioninterface.h",
+            "c:\\program files\\epic games\\ue_5.5\\engine\\source\\runtime\\typedelementframework\\public\\elements\\framework\\typedelementlistproxy.h",
+            "c:\\program files\\epic games\\ue_5.5\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\typedelementframework\\uht\\typedelementlistproxy.generated.h",
+            "c:\\program files\\epic games\\ue_5.5\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\typedelementruntime\\uht\\typedelementselectioninterface.generated.h",
+            "c:\\program files\\epic games\\ue_5.5\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\typedelementruntime\\uht\\typedelementselectionset.generated.h",
+            "c:\\program files\\epic games\\ue_5.5\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\unrealed\\uht\\selection.generated.h",
+            "c:\\program files\\epic games\\ue_5.5\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\unrealed\\uht\\kismetdebugutilities.generated.h",
+            "c:\\program files\\epic games\\ue_5.5\\engine\\source\\runtime\\coreuobject\\public\\blueprint\\blueprintexceptioninfo.h",
+            "c:\\program files\\microsoft visual studio\\2022\\community\\vc\\tools\\msvc\\14.38.33130\\include\\map",
+            "c:\\program files\\microsoft visual studio\\2022\\community\\vc\\tools\\msvc\\14.38.33130\\include\\xtree"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}

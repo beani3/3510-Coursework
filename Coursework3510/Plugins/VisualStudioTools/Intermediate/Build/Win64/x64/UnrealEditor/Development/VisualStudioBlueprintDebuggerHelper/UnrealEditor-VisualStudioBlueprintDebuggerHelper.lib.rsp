@@ -1,0 +1,12 @@
+/NOLOGO
+/errorReport:prompt
+/MACHINE:x64
+/SUBSYSTEM:WINDOWS
+/DEF
+/NAME:"UnrealEditor-VisualStudioBlueprintDebuggerHelper.dll"
+/IGNORE:4221
+/NODEFAULTLIB
+"D:\Uni Stuff\3510-Coursework\Coursework3510\Intermediate\Build\Win64\x64\Coursework3510Editor\Development\UnrealEd\SharedPCH.UnrealEd.Project.NonOptimized.ValApi.Cpp20.h.obj"
+"D:\Uni Stuff\3510-Coursework\Coursework3510\Plugins\VisualStudioTools\Intermediate\Build\Win64\x64\UnrealEditor\Development\VisualStudioBlueprintDebuggerHelper\Module.VisualStudioBlueprintDebuggerHelper.cpp.obj"
+"D:\Uni Stuff\3510-Coursework\Coursework3510\Plugins\VisualStudioTools\Intermediate\Build\Win64\x64\UnrealEditor\Development\VisualStudioBlueprintDebuggerHelper\Default.rc2.res"
+/OUT:"D:\Uni Stuff\3510-Coursework\Coursework3510\Plugins\VisualStudioTools\Intermediate\Build\Win64\x64\UnrealEditor\Development\VisualStudioBlueprintDebuggerHelper\UnrealEditor-VisualStudioBlueprintDebuggerHelper.lib"

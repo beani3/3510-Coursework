@@ -1,0 +1,12 @@
+/NOLOGO
+/errorReport:prompt
+/MACHINE:x64
+/SUBSYSTEM:WINDOWS
+/DEF
+/NAME:"UnrealEditor-VisualStudioTools.dll"
+/IGNORE:4221
+/NODEFAULTLIB
+"D:\Uni Stuff\3510-Coursework\Coursework3510\Intermediate\Build\Win64\x64\Coursework3510Editor\Development\UnrealEd\SharedPCH.UnrealEd.Project.ValApi.Cpp20.h.obj"
+"D:\Uni Stuff\3510-Coursework\Coursework3510\Plugins\VisualStudioTools\Intermediate\Build\Win64\x64\UnrealEditor\Development\VisualStudioTools\Module.VisualStudioTools.cpp.obj"
+"D:\Uni Stuff\3510-Coursework\Coursework3510\Plugins\VisualStudioTools\Intermediate\Build\Win64\x64\UnrealEditor\Development\VisualStudioTools\Default.rc2.res"
+/OUT:"D:\Uni Stuff\3510-Coursework\Coursework3510\Plugins\VisualStudioTools\Intermediate\Build\Win64\x64\UnrealEditor\Development\VisualStudioTools\UnrealEditor-VisualStudioTools.lib"
