@@ -4,10 +4,7 @@
 #include "GameFramework/Controller.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
-#include "Engine/GameEngine.h"
-#include "Kismet/GameplayStatics.h"
-#include "GM_RaceManager.h"
-
+#include "Blueprint/UserWidget.h"
 
 void AMyPlayerCar::BeginPlay() {
 	Super::BeginPlay();
@@ -18,22 +15,18 @@ void AMyPlayerCar::BeginPlay() {
 			ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController
 				->GetLocalPlayer())) {
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
-		}
-	}
+		};
+	};
 }
 
 void AMyPlayerCar::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) {
 	// Setting up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent =
 		CastChecked<UEnhancedInputComponent>(PlayerInputComponent)) {
-
+		
 		// Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::Move);
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &AMyPlayerCar::MoveEnd);
-
-		// Steering
-		EnhancedInputComponent->BindAction(SteeringAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::Steering);
-		EnhancedInputComponent->BindAction(SteeringAction, ETriggerEvent::Completed, this, &AMyPlayerCar::SteeringEnd);
 
 		// Handbreak
 		EnhancedInputComponent->BindAction(HandbrakeAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::OnHandbrakePressed);
@@ -41,11 +34,6 @@ void AMyPlayerCar::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 
 		// Pause Menu
 		EnhancedInputComponent->BindAction(PauseAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::OnPauseEnter);
-		EnhancedInputComponent->BindAction(PauseAction, ETriggerEvent::Completed, this, &AMyPlayerCar::OnPauseExit);
-
-		// Main Menu
-		EnhancedInputComponent->BindAction(MenuAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::OnMenuEnter);
-		EnhancedInputComponent->BindAction(MenuAction, ETriggerEvent::Completed, this, &AMyPlayerCar::OnMenuExit);
 	}
 }
 
@@ -58,22 +46,13 @@ void AMyPlayerCar::Move(const FInputActionValue& Value) {
 		GetVehicleMovementComponent()->SetBrakeInput(MovementVector.Y * -1);
 	}
 
-	
+	GetVehicleMovementComponent()->SetSteeringInput(MovementVector.X);
 }
 
 void AMyPlayerCar::MoveEnd() {
 	GetVehicleMovementComponent()->SetBrakeInput(0);
 	GetVehicleMovementComponent()->SetThrottleInput(0);
-}
-
-void AMyPlayerCar::Steering(const FInputActionValue& Value) {
-	
-	const float SteeringAxis = Value.Get<float>();
-	GetVehicleMovementComponent()->SetSteeringInput(SteeringAxis);
-}
-
-void AMyPlayerCar::SteeringEnd() {
-	GetVehicleMovementComponent()->SetSteeringInput(0.f);
+	GetVehicleMovementComponent()->SetSteeringInput(0);
 }
 
 void AMyPlayerCar::OnHandbrakePressed() {
@@ -85,54 +64,33 @@ void AMyPlayerCar::OnHandbrakeReleased() {
 }
 
 void AMyPlayerCar::OnPauseEnter() {
-
-}
-
-void AMyPlayerCar::OnPauseExit() {
-
-}
-
-void AMyPlayerCar::OnMenuEnter() {
-
-}
-
-void AMyPlayerCar::OnMenuExit() {
-
+	PauseMenuInst = CreateWidget<UUserWidget>(GetWorld(), PauseMenu);
+	APlayerController* PlayerController = Cast<APlayerController>(Controller);
 	
+	PauseMenuInst->AddToViewport();
+	bInPauseMenu = true;
+	
+	if (bInPauseMenu) {
+		PlayerController->bShowMouseCursor = true;
+		PlayerController->SetInputMode(FInputModeUIOnly());
+	}
 }
 
-void AMyPlayerCar::LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints, bool _bStartFinishLine)
+void AMyPlayerCar::LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints, bool _bStartFinishLine) 
 {
 	UE_LOG(LogTemp, Warning, TEXT("LapCheckpoint called!"));
-
+	
 	if (CurrentCheckpoint >= _MaxCheckpoints && _bStartFinishLine == true)
 	{
 		Lap += 1;
 		CurrentCheckpoint = 1;
-
-		// Check finish against GameMode's TotalLaps and notify GameMode if finished
-		if (GetWorld())
-		{
-			if (AGM_RaceManager* GM = Cast<AGM_RaceManager>(UGameplayStatics::GetGameMode(GetWorld())))
-			{
-				if (Lap >= GM->TotalLaps)
-				{
-					// Notify GameMode that this player finished
-					GM->NotifyPlayerFinished();
-				}
-			}
-		}
-
-		
-
-
 	}
-
-	else if (_CheckpointNumber == CurrentCheckpoint + 1)
+	
+	else if (_CheckpointNumber == CurrentCheckpoint + 1) 
 	{
 		CurrentCheckpoint += 1;
 	}
-
+	
 
 	else if (_CheckpointNumber < CurrentCheckpoint)
 	{
@@ -140,9 +98,4 @@ void AMyPlayerCar::LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints,
 	}
 
 	UE_LOG(LogTemp, Warning, TEXT("Lap: %i, Checkpoint: %i"), Lap, CurrentCheckpoint);
-	if (GEngine)
-	{
-		FString Message = FString::Printf(TEXT("Lap: %d, Checkpoint: %d"), Lap, CurrentCheckpoint);
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, Message);
-	}
 }

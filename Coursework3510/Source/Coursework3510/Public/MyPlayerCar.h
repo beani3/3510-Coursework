@@ -15,13 +15,12 @@ public:
 	void BeginPlay();
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent);
 
-
+	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputMappingContext* DefaultMappingContext;
 
 	// Forward movement input actions	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-
 	class UInputAction* MoveAction;
 
 	// Breaking input action
@@ -32,26 +31,19 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputAction* PauseAction;
 
-	// Main Menu input action
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	class UInputAction* MenuAction;
-
-	// Steering input action
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	class UInputAction* SteeringAction;
-
 	void Move(const FInputActionValue& Value);
 	void MoveEnd();
-	void Steering(const FInputActionValue& Value);
-	void SteeringEnd();
 	void OnHandbrakePressed();
 	void OnHandbrakeReleased();
 	void OnPauseEnter();
-	void OnPauseExit();
-	void OnMenuEnter();
-	void OnMenuExit();
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
+	TSubclassOf<UUserWidget> UPauseMenu;
+	UUserWidget* PauseMenuInst;
 
-
+	bool bInPauseMenu = false;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
 	int32 Lap = 1;
 	int32 CurrentCheckpoint = 0;
 	void LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints, bool _bStartFinishLine);
