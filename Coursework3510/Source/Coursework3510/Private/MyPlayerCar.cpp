@@ -76,7 +76,7 @@ void AMyPlayerCar::OnHandbrakeReleased() {
 }
 
 void AMyPlayerCar::OnPauseEnter() {
-	//PauseMenuInst = CreateWidget<UUserWidget>(GetWorld(), PauseMenu);
+	PauseMenuInst = CreateWidget<UUserWidget>(GetWorld(), PauseMenu);
 	APlayerController* PlayerController = Cast<APlayerController>(Controller);
 	
 	PauseMenuInst->AddToViewport();

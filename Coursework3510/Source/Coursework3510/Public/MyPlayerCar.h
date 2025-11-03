@@ -43,7 +43,7 @@ public:
 	void OnPauseEnter();
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
-	TSubclassOf<UUserWidget> UPauseMenu;
+	TSubclassOf<UUserWidget> PauseMenu;
 	UUserWidget* PauseMenuInst;
 
 	bool bInPauseMenu = false;
