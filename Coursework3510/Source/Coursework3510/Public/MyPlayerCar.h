@@ -53,12 +53,6 @@ public:
 	int32 CurrentCheckpoint = 0;
 	void LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints, bool _bStartFinishLine);
 
-	UFUNCTION(BlueprintCallable)
-	void CallCreateLobby();
-
-	UFUNCTION(BlueprintCallable)
-	void CallClientTravel(const FString& Address);
-
 private:
 
 protected:

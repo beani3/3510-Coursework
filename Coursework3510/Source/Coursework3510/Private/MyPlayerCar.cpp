@@ -111,20 +111,3 @@ void AMyPlayerCar::LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints,
 
 	UE_LOG(LogTemp, Warning, TEXT("Lap: %i, Checkpoint: %i"), Lap, CurrentCheckpoint);
 }
-
-void AMyPlayerCar::CallCreateLobby()
-{
-	UWorld* World = GetWorld();
-	{
-		World->ServerTravel("/Game/Levels/SplineMapTest?listen");
-	}
-}
-
-void AMyPlayerCar::CallClientTravel(const FString& Address)
-{
-	APlayerController* PlayerController = GetGameInstance()->GetFirstLocalPlayerController();
-	if (PlayerController)
-	{
-		PlayerController->ClientTravel(Address, ETravelType::TRAVEL_Absolute);
-	}
-}
