@@ -17,7 +17,7 @@ void AMyAIController::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 	FVector CurrentLocation = AICar->GetActorLocation();
 
-	SetThrottle(1);
+	SetThrottle(0.5);
 }
 
 // Throttle value is between 0 and 1
