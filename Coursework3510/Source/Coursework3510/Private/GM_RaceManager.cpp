@@ -3,6 +3,9 @@
 #include "TimerManager.h"
 #include "Engine/Engine.h"
 #include "GameFramework/PlayerController.h"
+#include "Blueprint/WidgetBlueprintLibrary.h"
+#include "Blueprint/WidgetLayoutLibrary.h"
+#include "Kismet/GameplayStatics.h"
 
 AGM_RaceManager::AGM_RaceManager()
 {
@@ -198,10 +201,14 @@ void AGM_RaceManager::EndRace()
 	FinishRaceInternal();
 }
 
+
+
+
 void AGM_RaceManager::CallCreateLobby()
 {
 	UWorld* World = GetWorld();
 	{
+		
 		World->ServerTravel("/Game/Levels/SplineMapTest?listen");
 	}
 }
@@ -211,6 +218,7 @@ void AGM_RaceManager::CallClientTravel(const FString& Address)
 	APlayerController* PlayerController = GetGameInstance()->GetFirstLocalPlayerController();
 	if (PlayerController)
 	{
+		
 		PlayerController->ClientTravel(Address, ETravelType::TRAVEL_Absolute);
 	}
 }

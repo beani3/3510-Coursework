@@ -61,6 +61,9 @@ void AMyPlayerCar::BeginPlay() {
 	}
 
 
+
+
+
 	// Get Game Mode and cast to GM_RaceManager to bind race events
 	AGameModeBase* GameMode = UGameplayStatics::GetGameMode(this);
 	if (GameMode)
@@ -75,7 +78,6 @@ void AMyPlayerCar::BeginPlay() {
 			RaceManager->OnFinished.AddDynamic(this, &AMyPlayerCar::OnRaceFinished);
 		}
 	}
-
 
 
 	// Input mapping context 

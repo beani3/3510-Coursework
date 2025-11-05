@@ -74,6 +74,9 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Race")
 	void BP_OnPlayerFinished(int32 PlayerFinishOrder, float FinishTime); //event for player finish, used for UI
 
+
+
+
 	UFUNCTION(BlueprintCallable)
 	void CallCreateLobby();
 
@@ -96,4 +99,5 @@ protected:
 	void OnCountdownComplete(); //called when countdown finishes
 
 	void FinishRaceInternal();
+
 };
