@@ -123,12 +123,6 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Race")
 	AGM_RaceManager* GMRaceRef = nullptr;
 
-	UFUNCTION(BlueprintCallable)
-	void CallCreateLobby();
-
-	UFUNCTION(BlueprintCallable)
-	void CallClientTravel(const FString& Address);
-
 private:
 
 protected:

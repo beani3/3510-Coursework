@@ -74,6 +74,12 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Race")
 	void BP_OnPlayerFinished(int32 PlayerFinishOrder, float FinishTime); //event for player finish, used for UI
 
+	UFUNCTION(BlueprintCallable)
+	void CallCreateLobby();
+
+	UFUNCTION(BlueprintCallable)
+	void CallClientTravel(const FString& Address);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;

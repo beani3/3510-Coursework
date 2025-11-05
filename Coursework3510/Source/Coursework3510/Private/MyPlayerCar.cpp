@@ -215,20 +215,3 @@ void AMyPlayerCar::OnRaceFinished()
 {
 	GetVehicleMovementComponent()->SetHandbrakeInput(true);
 }
-
-void AMyPlayerCar::CallCreateLobby()
-{
-	UWorld* World = GetWorld();
-	{
-		World->ServerTravel("/Game/Levels/SplineMapTest?listen");
-	}
-}
-
-void AMyPlayerCar::CallClientTravel(const FString& Address)
-{
-	APlayerController* PlayerController = GetGameInstance()->GetFirstLocalPlayerController();
-	if (PlayerController)
-	{
-		PlayerController->ClientTravel(Address, ETravelType::TRAVEL_Absolute);
-	}
-}
