@@ -209,7 +209,7 @@ void AGM_RaceManager::CallCreateLobby()
 	UWorld* World = GetWorld();
 	{
 		
-		World->ServerTravel("/Game/Levels/SplineMapTest?listen");
+		World->ServerTravel("/Game/Levels/MossyMeadows?listen");
 	}
 }
 
