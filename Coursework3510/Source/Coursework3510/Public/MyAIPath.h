@@ -6,6 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "MyAIPath.generated.h"
 
+class USplineComponent;
+
 UCLASS()
 class COURSEWORK3510_API AMyAIPath : public AActor
 {
@@ -14,6 +16,14 @@ class COURSEWORK3510_API AMyAIPath : public AActor
 public:	
 	// Sets default values for this actor's properties
 	AMyAIPath();
+
+	UPROPERTY(EditAnywhere, Category = "Spline")
+	USplineComponent* SplineComponent;
+
+	UPROPERTY(EditAnywhere, Category = "Spline")
+	FVector SplineOffset;
+
+	FVector FindClosestLocationAlongAIPath(FVector AILocation);
 
 protected:
 	// Called when the game starts or when spawned

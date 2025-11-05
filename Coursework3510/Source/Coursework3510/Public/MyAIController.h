@@ -38,5 +38,4 @@ private:
 	float BrakingVal;
 
 protected:
-
 };

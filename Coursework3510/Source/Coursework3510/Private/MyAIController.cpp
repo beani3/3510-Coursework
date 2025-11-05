@@ -5,6 +5,7 @@
 #include "ChaosWheeledVehicleMovementComponent.h"
 #include "WheeledVehiclePawn.h"
 #include "MyPlayerCar.h"
+#include "MyAIPath.h"
 
 void AMyAIController::BeginPlay() {
 	Super::BeginPlay();
@@ -17,7 +18,7 @@ void AMyAIController::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 	FVector CurrentLocation = AICar->GetActorLocation();
 
-	SetThrottle(0.5);
+	SetThrottle(1);
 }
 
 // Throttle value is between 0 and 1
