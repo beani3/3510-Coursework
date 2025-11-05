@@ -33,7 +33,6 @@ void AObstaclesBase::OnConstruction(const FTransform& Transform)
 void AObstaclesBase::BeginPlay()
 {
     Super::BeginPlay();
-	ApplyData(); //apply data on begin play
 
 	if (HealthComp) //bind death event
     {
@@ -55,7 +54,7 @@ void AObstaclesBase::ApplyData()
     }
 
 	Mesh->SetRelativeScale3D(Data->RelativeScale3D); //Transofrm overrides
-    Mesh->SetRelativeRotation(Data->RelativeRotation);
+    //Mesh->SetRelativeRotation(Data->RelativeRotation);
 
 
     Mesh->SetCollisionProfileName(Data->CollisionProfileName);

@@ -35,8 +35,8 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) UStaticMesh* Mesh = nullptr; // Mesh asset
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) TArray<UMaterialInterface*> OverrideMaterials; // Optional material overrides
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) FVector  RelativeScale3D = FVector(1); // Transform overrides
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) FRotator RelativeRotation = FRotator::ZeroRotator; // Rotation
+	UPROPERTY(EditAnywhere, BlueprintReadWrite) FVector  RelativeScale3D = FVector(1); // Transform overrides
+	UPROPERTY(EditAnywhere, BlueprintReadWrite) FRotator RelativeRotation = FRotator::ZeroRotator; // Rotation
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) FName CollisionProfileName = TEXT("BlockAllDynamic"); // Collision profile
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) bool  bSimulatePhysics = false; // Physics simulation
