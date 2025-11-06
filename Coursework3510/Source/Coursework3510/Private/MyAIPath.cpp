@@ -25,8 +25,3 @@ void AMyAIPath::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 }
-
-FVector AMyAIPath::FindClosestLocationAlongAIPath(FVector AILocation) {
-	float DistAlongSpline = SplineComponent->GetDistanceAlongSplineAtLocation(AILocation, ESplineCoordinateSpace::World);
-	return SplineComponent->GetLocationAtDistanceAlongSpline(DistAlongSpline, ESplineCoordinateSpace::World);
-}

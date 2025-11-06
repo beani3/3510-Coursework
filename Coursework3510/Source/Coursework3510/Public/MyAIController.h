@@ -6,6 +6,8 @@
 #include "MyAIController.generated.h"
 
 class AMyPlayerCar;
+class USplineComponent;
+class AMyAIPath;
 
 UCLASS()
 class COURSEWORK3510_API AMyAIController : public AAIController
@@ -19,18 +21,27 @@ public:
 	 * AI car means we can access the neccessary variables
 	 * to make the AI move.
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
 	AMyPlayerCar* AICar;
 
-	// AI Car getters and setters
-	void SetThrottle(float throttleVal);
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+	USplineComponent* CurrentSpline;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+	TArray<AMyAIPath*> AIPathArray;
+		
+	// AI Car getters 
+	// void CalcThrottle();
 	float GetThrottleVal();
 
-	void SetSteering(float steeringVal);
+	float CalcSteering();
 	float GetSteeringVal();
 
-	void SetBraking(float brakingVal);
+	// void CalcBreaking();
 	float GetBrakingVal();
+
+	FVector FindClosestLocationAlongAIPath(FVector AILocation);
+	void SetCurrentSpline(int8 SplineIndex);
 
 private:
 	float ThrottleVal;

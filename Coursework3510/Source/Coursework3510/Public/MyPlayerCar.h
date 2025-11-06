@@ -53,6 +53,8 @@ public:
 	int32 CurrentCheckpoint = 0;
 	void LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints, bool _bStartFinishLine);
 
+	UPROPERTY(EditAnywhere, Category = "AI")
+	int32 CurrentSpline = 0;
 private:
 
 protected:

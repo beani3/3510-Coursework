@@ -23,8 +23,6 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Spline")
 	FVector SplineOffset;
 
-	FVector FindClosestLocationAlongAIPath(FVector AILocation);
-
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
