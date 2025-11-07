@@ -28,7 +28,7 @@ void AMyAIController::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
 	AICar->GetVehicleMovementComponent()->SetSteeringInput(CalcSteering());
-	AICar->GetVehicleMovementComponent()->SetThrottleInput(0.2);
+	AICar->GetVehicleMovementComponent()->SetThrottleInput(0.5);
 }
 
 // Throttle value is between 0 and 1
@@ -63,9 +63,11 @@ float AMyAIController::GetBrakingVal() {
 }
 
 FVector AMyAIController::FindClosestLocationAlongAIPath(FVector AILocation) {
-	float SplineOffset = 500;
+	float SplineOffset = 1500;
 	float DistAlongSpline = (CurrentSpline->GetDistanceAlongSplineAtLocation(AILocation, ESplineCoordinateSpace::World) + SplineOffset);
-	return CurrentSpline->GetLocationAtDistanceAlongSpline(DistAlongSpline, ESplineCoordinateSpace::World);
+	FVector LocationToFollow =  CurrentSpline->GetLocationAtDistanceAlongSpline(DistAlongSpline, ESplineCoordinateSpace::World);
+	DrawDebugSphere(GetWorld(), LocationToFollow, 15, 10, FColor::Blue, false, 0.1f);
+	return LocationToFollow;
 }
 
 void AMyAIController::SetCurrentSpline(int8 SplineIndex) {
