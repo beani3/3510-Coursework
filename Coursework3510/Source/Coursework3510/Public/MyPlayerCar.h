@@ -5,6 +5,7 @@
 #include "WheeledVehiclePawn.h"
 #include "InputActionValue.h"
 #include "ChaosVehicleMovementComponent.h"
+#include "Components/SplineComponent.h"
 //#include "PowerupUserInterface.h"
 //#include "BPI_ScoreReceiver.h"
 #include "MyPlayerCar.generated.h"
@@ -20,6 +21,25 @@ class UAC_PointsComponent;
 
 
 
+USTRUCT(BlueprintType)
+struct FRaceData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 RacePosition = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 Lap = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 CurrentCheckpoint = 0;
+
+	// 0..1 current lap progress
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float LapProgress01 = 0.f;
+
+};
 
 
 
@@ -33,6 +53,8 @@ public:
 
 public:
 	void BeginPlay();
+	void Tick(float DeltaSeconds) override;
+	
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent);
 
 	/*virtual void ApplyBuff_Implementation(const UBuffDef* Buff) override;
@@ -62,9 +84,69 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputAction* PowerupAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	class UInputAction* ResetAction;
 
 
+	// --- Track/Spline refs ---
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Race|Track")
+	TObjectPtr<USplineComponent> RaceSpline = nullptr; // set automatically from BP_Racetrack actor
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Race|Track")
+	FName SplineComponentName = FName("Spline"); // name of spline comp inside BP_Racetrack
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Race|Track")
+	FName RacetrackActorTag = FName("BP_Racetrack"); // tag to find the track actor (set this tag on your BP)
+
+	// --- Live progress (server-authored, replicated for UI) ---
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Race|Progress")
+	float DistanceOnSpline = 0.f;
+
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Race|Progress")
+	float LapProgress01 = 0.f; // 0..1 for current lap
+
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Race|Progress")
+	int32 RacePosition = 1; // 1 = leading
+
+	// --- Respawn / validity ---
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Race|Reset")
+	float MaxOffTrackMeters = 1800.f; // exceed -> suspect cut/cheat, auto-reset
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Race|Reset")
+	float WrongWaySecondsToReset = 2.0f; // going opposite along spline too long -> reset
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Race|Reset")
+	float FlipSecondsToReset = 1.5f; // car rolled -> reset
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Race|Reset")
+	float RespawnLateralOffset = 40.f; // cm to the right when respawning
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Race|Reset")
+	float RespawnForwardMeters = 200.f; // nudge forward on track to avoid pileups
+
+	// cached / timers
+	float WrongWayTimer = 0.f;
+	float FlipTimer = 0.f;
+
+	// API
+	UFUNCTION(BlueprintCallable, Category = "Race|Track")
+	void InitRacetrackSpline(); // finds BP_Racetrack and caches its Spline
+
+	UFUNCTION(BlueprintCallable, Category = "Race|Track")
+	float GetDistanceAlongTrackAt(const FVector& WorldLoc) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Race|Track")
+	float GetLapProgress01At(const FVector& WorldLoc) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Race|Reset")
+	void ResetToCheckpoint(); // use CurrentCheckpoint as anchor
+
+	// Helper for UI (local or BP)
+	UFUNCTION(BlueprintPure, Category = "Race|UI")
+	float GetNormalizedSpeed() const;
+
+	UFUNCTION(BlueprintPure, Category = "Race|UI")
+	FRaceData GetRaceData() const;
 
 
 	void Move(const FInputActionValue& Value);
