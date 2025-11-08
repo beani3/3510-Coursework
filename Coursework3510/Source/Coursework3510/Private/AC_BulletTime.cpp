@@ -146,7 +146,6 @@ void UAC_BulletTime::StartBulletTime(float DurationSeconds)
 		}
 	}
 
-n
 	const FVector MyLoc = GetOwner()->GetActorLocation();
 	const float Key = RaceSpline->FindInputKeyClosestToWorldLocation(MyLoc);
 	StartDistance = RaceSpline->GetDistanceAlongSplineAtSplineInputKey(Key);
