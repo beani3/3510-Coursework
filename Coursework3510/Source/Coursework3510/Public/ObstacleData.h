@@ -1,4 +1,6 @@
 #pragma once
+
+#include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
 #include "NiagaraSystem.h"
 #include "Sound/SoundBase.h"
@@ -6,51 +8,108 @@
 #include "PhysicalMaterials/PhysicalMaterial.h"
 #include "ObstacleData.generated.h"
 
-
 USTRUCT(BlueprintType) // Health tuning for obstacles
 struct FObstacleHealthTuning
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) bool  bHasHealth = false;
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (EditCondition = "bHasHealth")) float MaxHealth = 100.f;
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (EditCondition = "bHasHealth")) bool  bCanDie = true;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) bool  bHasHealth = false;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (EditCondition = "bHasHealth")) float MaxHealth = 100.f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (EditCondition = "bHasHealth")) bool  bCanDie = true;
 
-    //Optional regen
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (EditCondition = "bHasHealth")) bool  bAutoRegen = false;
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (EditCondition = "bHasHealth")) float RegenPerSecond = 5.f;
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (EditCondition = "bHasHealth")) float RegenDelay = 3.f;
+	// Optional regen
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (EditCondition = "bHasHealth")) bool  bAutoRegen = false;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (EditCondition = "bHasHealth")) float RegenPerSecond = 5.f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (EditCondition = "bHasHealth")) float RegenDelay = 3.f;
 
-    // Impact damage
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (EditCondition = "bHasHealth"))
-    float ImpactDamageScale = 0.001f;
+	// Impact damage
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (EditCondition = "bHasHealth"))
+	float ImpactDamageScale = 0.001f;
 };
 
-UCLASS(BlueprintType) // Data asset for obstacle configuration
+UCLASS(BlueprintType)
 class UObstacleData : public UDataAsset
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 public:
- 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) UStaticMesh* Mesh = nullptr; // Mesh asset
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) TArray<UMaterialInterface*> OverrideMaterials; // Optional material overrides
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite) FVector  RelativeScale3D = FVector(1); // Transform overrides
-	UPROPERTY(EditAnywhere, BlueprintReadWrite) FRotator RelativeRotation = FRotator::ZeroRotator; // Rotation
+	/** Visuals */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Obstacle|Visual")
+	UStaticMesh* Mesh = nullptr;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) FName CollisionProfileName = TEXT("BlockAllDynamic"); // Collision profile
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) bool  bSimulatePhysics = false; // Physics simulation
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) TEnumAsByte<EComponentMobility::Type> Mobility = EComponentMobility::Static; // Mobility type
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) bool  bOverrideMass = false; // Mass override
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (EditCondition = "bOverrideMass")) float MassInKg = 50.f; // Mass value
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) UPhysicalMaterial* PhysMatOverride = nullptr; // Physical material override
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Obstacle|Visual")
+	TArray<UMaterialInterface*> OverrideMaterials;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) UNiagaraSystem* HitVFX = nullptr; // Hit VFX
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) USoundBase* HitSFX = nullptr; // Hit SFX
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (ClampMin = "0.01")) float VFXScale = 1.f; // VFX scale
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Obstacle|Transform")
+	FVector  RelativeScale3D = FVector(1.f);
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) FObstacleHealthTuning Health; // Health tuning
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Obstacle|Transform")
+	FRotator RelativeRotation = FRotator::ZeroRotator;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) bool bDestroyOnDeath = true;// Destroy actor on death
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly) UStaticMesh* BrokenMesh = nullptr; // optional swap
+	/** Collision/Physics */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Obstacle|Physics")
+	FName CollisionProfileName = TEXT("PhysicsActor");
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Obstacle|Physics")
+	bool bSimulatePhysics = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Obstacle|Physics")
+	TEnumAsByte<EComponentMobility::Type> Mobility = EComponentMobility::Movable;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Obstacle|Physics")
+	bool bOverrideMass = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (EditCondition = "bOverrideMass"), Category = "Obstacle|Physics")
+	float MassInKg = 1.f;
+
+	/** Feedback (Hit) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Obstacle|Feedback")
+	UNiagaraSystem* HitVFX = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Obstacle|Feedback")
+	USoundBase* HitSFX = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (ClampMin = "0.01"), Category = "Obstacle|Feedback")
+	float VFXScale = 1.f;
+
+	/** Feedback (Death) — optional; falls back to HitVFX/HitSFX when null */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Obstacle|Feedback")
+	UNiagaraSystem* DeathVFX = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Obstacle|Feedback")
+	USoundBase* DeathSFX = nullptr;
+
+	/** If <= 0, reuses VFXScale */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (ClampMin = "0.0"), Category = "Obstacle|Feedback")
+	float DeathVFXScale = 0.f;
+
+	/** Health */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Obstacle")
+	FObstacleHealthTuning Health;
+
+	/** Death behavior */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Obstacle|Death")
+	bool bDestroyOnDeath = true;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (EditCondition = "!bDestroyOnDeath"), Category = "Obstacle|Death")
+	UStaticMesh* BrokenMesh = nullptr;
+
+	/** Scoring (awarded to the actor that hits/kills this obstacle) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Obstacle|Score")
+	int32 PointsOnHit = 0;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Obstacle|Score")
+	FName PointsReason_Hit = TEXT("HitObstacle");
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Obstacle|Score")
+	int32 PointsOnKill = 0;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Obstacle|Score")
+	FName PointsReason_Kill = TEXT("DestroyedObstacle");
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Obstacle|Score")
+	float PointsOnHitCooldownSeconds = 0.5f;          // time between point awards for same actor
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Obstacle|Score")
+	float MinImpulseForHitPoints = 0.f;               // min impulse magnitude required for hit points
 };

@@ -1,84 +1,90 @@
 #pragma once
+
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "ObstacleData.h"
-#include "AC_HealthComponent.h"
 #include "ObstaclesBase.generated.h"
 
+class UStaticMeshComponent;
+class UObstacleData;
+class UAC_HealthComponent;
 
-/*
-* Base class for all obstacles in the game.
-* Handles mesh, collision, health, and hit effects.
-* Looking to use a points system for obstacles in future.
-* Trying to make it as modular and reusable as possible.
-*/
-
-class UNiagaraSystem; //forward declaration for Niagara
-class UStaticMeshComponent; //same thing for static mesh
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FObstacleDamagedSig, float, NewHealth);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FObstacleDiedSig);
 
 UCLASS()
 class COURSEWORK3510_API AObstaclesBase : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
 
+public:
 	AObstaclesBase();
 
-protected:
-
-	virtual void BeginPlay() override;
-	virtual void OnConstruction(const FTransform& Transform) override; // apply mesh asset to component in editor
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Obstacle")
-	UStaticMeshComponent* Mesh;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Obstacle", meta = (DisplayName = "Static Mesh Asset")) //The mesh asset for this obstacle, can be set per instance
-	UStaticMesh* MeshAsset = nullptr;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Obstacle|Collision") //Collision box for obstacle hit detection
-	UBoxComponent* Collision;
-
-	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Obstacle|Data")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Obstacle")
 	UObstacleData* Data = nullptr;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Obstacle|Health")
-	UAC_HealthComponent* HealthComp;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Obstacle|FX") //Plays Sound on hit, optional, can be set per obstacle instance
-	USoundBase* HitSFX = nullptr;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Obstacle|FX") //Plays VFX on hit, optional, can be set per obstacle instance
-	UNiagaraSystem* HitVFX = nullptr;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Obstacle|FX", meta = (ClampMin = "0.01", UIMin = "0.1")) //For when we want bigger explosions
-	float VFXScale = 1.f; 
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Obstacle|Hit") //Stops obstacle from playing hit FX more than once, when true
-	bool bFXPlayed = false;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Obstacle|Collision") //If true, collision box will auto size to mesh bounds on begin play
-	bool bAutoSizeCollisionToMeshBounds = true;
-
-	uint64 LastHitFrame = 0; //To prevent multiple FX plays in a single frame
-
-	UFUNCTION()
-	virtual void OnCollisionHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit); //Handles obstacle hit events
-
-	virtual void HandlePostEffectsOnHit(AActor* OtherActor, UPrimitiveComponent* OtherComp, const FVector& NormalImpulse, const FHitResult& Hit); //Handles playing FX on hit
-
-	void PlayEffectsAtHit(const FHitResult& Hit); //Plays the hit FX at the hit location
-
-	void ApplyData();
-	UFUNCTION()
-	void OnDied_Handle();
-
-
-
-public:	
-	UFUNCTION(BlueprintCallable, Category = "Obstacle") //Allows access to collision component
-	UBoxComponent* GetCollision() const { return Collision; }
-
 	UFUNCTION(BlueprintCallable, Category = "Obstacle")
-	UStaticMeshComponent* GetMesh() const { return Mesh; } //Returns the obstacle mesh
+	void ApplyData(bool bApplyTransformOffsets);
+
+	UFUNCTION(BlueprintCallable, Category = "Obstacle|Combat")
+	virtual void ApplyDamage(float Amount, AActor* DamageInstigator = nullptr);
+
+	UFUNCTION(BlueprintPure, Category = "Obstacle|Combat")
+	float GetHealth() const { return CachedHealth; }
+
+	UPROPERTY(BlueprintAssignable, Category = "Obstacle|Combat")
+	FObstacleDamagedSig OnDamaged;
+
+	UPROPERTY(BlueprintAssignable, Category = "Obstacle|Combat")
+	FObstacleDiedSig OnDied;
+
+protected:
+	/** Mesh = root, ONLY physics/collision body */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Obstacle")
+	UStaticMeshComponent* Mesh = nullptr;
+
+	/** Health component */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Obstacle")
+	UAC_HealthComponent* HealthComp = nullptr;
+
+	/** Apply DA scale/rotation in Construction for preview (not at BeginPlay) */
+	UPROPERTY(EditAnywhere, Category = "Obstacle|Setup")
+	bool bApplyDAVisualOffsetsInConstruction = true;
+
+protected:
+	virtual void OnConstruction(const FTransform& Transform) override;
+	virtual void BeginPlay() override;
+
+	/** Feedback helpers */
+	void PlayHitFeedback(const FVector& Where);
+	void PlayDeathFeedback(const FVector& Where);
+
+	/** Destroy/swap mesh on death */
+	virtual void OnDied_Handle();
+
+	/** Physics hit callback */
+	UFUNCTION()
+	void OnMeshHit(UPrimitiveComponent* HitComp, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, FVector NormalImpulse,
+		const FHitResult& Hit);
+
+	/** Health component events */
+	UFUNCTION()
+	void OnHealthChanged(float NewHealth, float Delta);
+
+	UFUNCTION()
+	void OnDied_FromHealth();
+
+	/** Scoring helper: give points to a receiver (interface first, then component) */
+	void AwardPoints(AActor* Receiver, int32 Amount, FName Reason, AActor* Causer);
+
+protected:
+	float CachedHealth = 0.f;
+
+	/** Track who last caused damage (for kill credit) */
+	UPROPERTY()
+	TWeakObjectPtr<AActor> LastDamageInstigator;
+	
+	
+	// Internal record of last time we gave points to each OtherActor
+	TMap<TWeakObjectPtr<AActor>, double> LastHitScoreTime;
 };

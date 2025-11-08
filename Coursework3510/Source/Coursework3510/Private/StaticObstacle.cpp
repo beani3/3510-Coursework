@@ -1,20 +1,14 @@
 #include "StaticObstacle.h"
 #include "Components/StaticMeshComponent.h"
-#include "Components/BoxComponent.h"
 
 AStaticObstacle::AStaticObstacle()
 {
-	if (Mesh)
+	// Mesh blocks but doesn't simulate
+	if (UStaticMeshComponent* M = FindComponentByClass<UStaticMeshComponent>())
 	{
-		Mesh->SetSimulatePhysics(false);
-		Mesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-		Mesh->SetCollisionProfileName(TEXT("BlockAllDynamic"));
-		Mesh->SetMobility(EComponentMobility::Static);
-	}
-
-	if (Collision)
-	{
-		Collision->SetCollisionProfileName(TEXT("BlockAllDynamic"));
-		Collision->SetGenerateOverlapEvents(false);
+		M->SetSimulatePhysics(false);
+		M->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		M->SetCollisionProfileName(TEXT("BlockAllDynamic")); // or your custom profile
+		M->SetMobility(EComponentMobility::Static);
 	}
 }
