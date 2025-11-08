@@ -65,10 +65,16 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputMappingContext* DefaultMappingContext;
+	// Throttle input action
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	class UInputAction* ThrottleAction;
+	// Brake input action
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	class UInputAction* BrakeAction;
 
 	// Forward movement input actions	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	class UInputAction* MoveAction;
+	/*UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	class UInputAction* MoveAction;*/
 
 	// Breaking input action
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
@@ -148,9 +154,12 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Race|UI")
 	FRaceData GetRaceData() const;
 
-
-	void Move(const FInputActionValue& Value);
-	void MoveEnd();
+	void Throttle(const FInputActionValue& Value);
+	void ThrottleEnd();
+	void Brake(const FInputActionValue& Value);
+	void BrakeEnd();
+	/*void Move(const FInputActionValue& Value);
+	void MoveEnd();*/
 	void Steering(const FInputActionValue& Value);
 	void SteeringEnd();
 	void OnHandbrakePressed();

@@ -7,6 +7,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Math/UnrealMathUtility.h"
 
 #include "Components/SplineComponent.h"
 #include "Net/UnrealNetwork.h"
@@ -219,10 +220,17 @@ void AMyPlayerCar::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	// Setting up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent =
 		CastChecked<UEnhancedInputComponent>(PlayerInputComponent)) {
+		// Throttle
+		EnhancedInputComponent->BindAction(ThrottleAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::Throttle);
+		EnhancedInputComponent->BindAction(ThrottleAction, ETriggerEvent::Completed, this, &AMyPlayerCar::ThrottleEnd);
+
+		// Brake
+		EnhancedInputComponent->BindAction(BrakeAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::Brake);
+		EnhancedInputComponent->BindAction(BrakeAction, ETriggerEvent::Completed, this, &AMyPlayerCar::BrakeEnd);
 		
-		// Moving
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::Move);
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &AMyPlayerCar::MoveEnd);
+		//// Moving
+		//EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::Move);
+		//EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &AMyPlayerCar::MoveEnd);
 
 		// Steering
 		EnhancedInputComponent->BindAction(SteeringAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::Steering);
@@ -241,22 +249,39 @@ void AMyPlayerCar::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	}
 }
 
-void AMyPlayerCar::Move(const FInputActionValue& Value) {
-	// Input is a 2D vector
-	FVector2D MovementVector = Value.Get<FVector2D>();
-	GetVehicleMovementComponent()->SetThrottleInput(MovementVector.Y);
-
-	if (MovementVector.Y < 0) {
-		GetVehicleMovementComponent()->SetBrakeInput(MovementVector.Y * -1);
-	}
+void AMyPlayerCar::Throttle(const FInputActionValue& Value) {
+	const float ThrottleAxis = FMath::Clamp(Value.Get<float>(), 0, 1.f);
+	GetVehicleMovementComponent()->SetThrottleInput(ThrottleAxis);
+}
+void AMyPlayerCar::ThrottleEnd() {
+	GetVehicleMovementComponent()->SetThrottleInput(0.f);
 }
 
-
-
-void AMyPlayerCar::MoveEnd() {
-	GetVehicleMovementComponent()->SetBrakeInput(0);
-	GetVehicleMovementComponent()->SetThrottleInput(0);
+void AMyPlayerCar::Brake(const FInputActionValue& Value) {
+	const float BrakeAxis = FMath::Clamp(Value.Get<float>(), 0, 1.f);
+	GetVehicleMovementComponent()->SetBrakeInput(BrakeAxis);
 }
+
+void AMyPlayerCar::BrakeEnd() {
+	GetVehicleMovementComponent()->SetBrakeInput(0.f);
+}
+
+//void AMyPlayerCar::Move(const FInputActionValue& Value) {
+//	// Input is a 2D vector
+//	FVector2D MovementVector = Value.Get<FVector2D>();
+//	GetVehicleMovementComponent()->SetThrottleInput(MovementVector.Y);
+//
+//	if (MovementVector.Y < 0) {
+//		GetVehicleMovementComponent()->SetBrakeInput(MovementVector.Y * -1);
+//	}
+//}
+
+
+
+//void AMyPlayerCar::MoveEnd() {
+//	GetVehicleMovementComponent()->SetBrakeInput(0);
+//	GetVehicleMovementComponent()->SetThrottleInput(0);
+//}
 
 void AMyPlayerCar::Steering(const FInputActionValue& Value) 
 {
