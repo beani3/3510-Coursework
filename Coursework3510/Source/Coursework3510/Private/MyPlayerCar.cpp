@@ -31,6 +31,9 @@
 #include "GM_RaceManager.h"
 #include "ProjectileDef.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogCarReset, Log, All);
+
+
 
 
 
@@ -146,9 +149,23 @@ void AMyPlayerCar::Tick(float DeltaSeconds)
 
 		if (bWrongWay || bFlipped || bCheating)
 		{
+			EResetCause Cause = EResetCause::None;
+			if (bWrongWay) { Cause = EResetCause::WrongWay; }
+			else if (bFlipped) { Cause = EResetCause::Flipped; }
+			else { Cause = EResetCause::OffTrack; }
+
+			// Log detailed reason + numbers (both server log and local popup)
+			LogResetReason(
+				Cause,
+				ForwardDot, WrongWayTimer, WrongWaySecondsToReset,
+				UpDot, FlipTimer, FlipSecondsToReset,
+				OffTrack, MaxOffTrackMeters
+			);
+
 			ResetToCheckpoint();
 			WrongWayTimer = FlipTimer = 0.f;
 		}
+
 	}
 }
 
@@ -386,8 +403,63 @@ void AMyPlayerCar::ResetToCheckpoint()
 	}
 }
 
+void AMyPlayerCar::LogResetReason(
+	EResetCause Cause,
+	const float ForwardDot, const float WrongWayTimerVal, const float WrongWayThreshold,
+	const float UpDot, const float FlipTimerVal, const float FlipThreshold,
+	const float OffTrackDist, const float OffTrackLimit)
+{
+	const double Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
 
+	// Avoid double-logs in the same instant (rare, but safe)
+	if (LastResetLogTime >= 0.0 && FMath::IsNearlyEqual((float)Now, (float)LastResetLogTime, 0.0001f))
+	{
+		return;
+	}
+	LastResetLogTime = Now;
 
+	ResetCount++;
+	LastResetCause = Cause;
+
+	// Build a concise line with all the relevant inputs & thresholds
+	const TCHAR* CauseStr =
+		(Cause == EResetCause::WrongWay) ? TEXT("WrongWay") :
+		(Cause == EResetCause::Flipped) ? TEXT("Flipped") :
+		(Cause == EResetCause::OffTrack) ? TEXT("OffTrack") : TEXT("Unknown");
+
+	UE_LOG(LogCarReset, Warning,
+		TEXT("[Reset #%d] Cause=%s | ForwardDot=%.2f (Timer=%.2fs/%.2fs) | UpDot=%.2f (Timer=%.2fs/%.2fs) | OffTrack=%.1f/%.1f | Pos=%s"),
+		ResetCount,
+		CauseStr,
+		ForwardDot, WrongWayTimerVal, WrongWayThreshold,
+		UpDot, FlipTimerVal, FlipThreshold,
+		OffTrackDist, OffTrackLimit,
+		*GetActorLocation().ToString()
+	);
+
+	// Optional: on-screen toast for the locally controlled player only
+	if (bShowResetToast)
+	{
+		const bool bLocallyControlled =
+			(IsPlayerControlled() && Cast<APlayerController>(Controller) && Cast<APlayerController>(Controller)->IsLocalController());
+
+		if (bLocallyControlled)
+		{
+			FString Toast = FString::Printf(
+				TEXT("RESET: %s\nFwdDot=%.2f  (%.1fs/%.1fs)\nUpDot=%.2f  (%.1fs/%.1fs)\nOffTrack=%.1fm / %.1fm"),
+				CauseStr,
+				ForwardDot, WrongWayTimerVal, WrongWayThreshold,
+				UpDot, FlipTimerVal, FlipThreshold,
+				OffTrackDist, OffTrackLimit
+			);
+
+			UKismetSystemLibrary::PrintString(
+				this, Toast, true, true,
+				FLinearColor(1.f, 0.3f, 0.1f, 1.f), 2.5f
+			);
+		}
+	}
+}
 
 
 

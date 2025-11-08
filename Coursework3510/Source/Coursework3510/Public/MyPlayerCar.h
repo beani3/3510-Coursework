@@ -19,7 +19,14 @@ class AGM_RaceManager; // assumed GM_RaceManager
 class ABP_RaceManager; // assumed BP_RaceManager
 class UAC_PointsComponent;
 
-
+UENUM(BlueprintType)
+enum class EResetCause : uint8
+{
+	None       UMETA(DisplayName = "None"),
+	WrongWay   UMETA(DisplayName = "Wrong Way"),
+	Flipped    UMETA(DisplayName = "Flipped"),
+	OffTrack   UMETA(DisplayName = "Off Track")
+};
 
 USTRUCT(BlueprintType)
 struct FRaceData
@@ -214,7 +221,32 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Race")
 	AGM_RaceManager* GMRaceRef = nullptr;
 
+	// --- Reset reason tracing ---
+	
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Debug|Reset", meta = (AllowPrivateAccess = "true"))
+	EResetCause LastResetCause = EResetCause::None;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Debug|Reset", meta = (AllowPrivateAccess = "true"))
+	int32 ResetCount = 0;
+
+	// Minimal cooldown so we don't print twice in one frame/network update
+	double LastResetLogTime = -1.0;
+
+	// Turn on/off on-screen popups (logs always print)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug|Reset")
+	bool bShowResetToast = true;
+
+	// Helper that prints the exact reason + metrics
+	void LogResetReason(EResetCause Cause,
+		const float ForwardDot, const float WrongWayTimerVal, const float WrongWayThreshold,
+		const float UpDot, const float FlipTimerVal, const float FlipThreshold,
+		const float OffTrackDist, const float OffTrackLimit);
+
+
 private:
 
 protected:
+	
+
 };
