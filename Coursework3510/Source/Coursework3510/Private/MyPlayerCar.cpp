@@ -277,10 +277,12 @@ void AMyPlayerCar::ThrottleEnd() {
 void AMyPlayerCar::Brake(const FInputActionValue& Value) {
 	const float BrakeAxis = FMath::Clamp(Value.Get<float>(), 0, 1.f);
 	GetVehicleMovementComponent()->SetBrakeInput(BrakeAxis);
+	bIsBraking = true;
 }
 
 void AMyPlayerCar::BrakeEnd() {
 	GetVehicleMovementComponent()->SetBrakeInput(0.f);
+	bIsBraking = false;
 }
 
 //void AMyPlayerCar::Move(const FInputActionValue& Value) {
@@ -313,10 +315,12 @@ void AMyPlayerCar::SteeringEnd()
 
 void AMyPlayerCar::OnHandbrakePressed() {
 	GetVehicleMovementComponent()->SetHandbrakeInput(true);
+	bIsBraking = true;
 }
 
 void AMyPlayerCar::OnHandbrakeReleased() {
 	GetVehicleMovementComponent()->SetHandbrakeInput(false);
+	bIsBraking = false;
 }
 
 void AMyPlayerCar::OnPauseEnter() {

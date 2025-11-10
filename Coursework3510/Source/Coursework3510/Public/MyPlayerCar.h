@@ -100,6 +100,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UInputAction* ResetAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	bool bIsBraking;
+
 
 	// --- Track/Spline refs ---
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Race|Track")
