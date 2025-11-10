@@ -25,7 +25,10 @@ public:
 	AMyPlayerCar* AICar;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
-	USplineComponent* CurrentSpline;
+	AMyAIPath* CurrentSpline;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+	float LookAheadDistance = 1500.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
 	TArray<AMyAIPath*> AIPathArray;
@@ -40,7 +43,7 @@ public:
 	// void CalcBreaking();
 	float GetBrakingVal();
 
-	FVector FindClosestLocationAlongAIPath(FVector AILocation);
+	FVector FindClosestLocationAlongAIPath(FVector point, float offset = 0.f);
 	void SetCurrentSpline(int8 SplineIndex);
 
 private:

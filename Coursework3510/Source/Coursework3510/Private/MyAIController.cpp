@@ -28,7 +28,14 @@ void AMyAIController::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
 	AICar->GetVehicleMovementComponent()->SetSteeringInput(CalcSteering());
-	AICar->GetVehicleMovementComponent()->SetThrottleInput(0.5);
+
+	float DistAlongSpline = CurrentSpline->SplineComponent->GetDistanceAlongSplineAtLocation(AICar->GetActorLocation(), ESplineCoordinateSpace::World);
+	FPathMetadata metadata = CurrentSpline->GetMetadataAtDistance(DistAlongSpline);
+	AICar->GetVehicleMovementComponent()->SetThrottleInput(metadata.TargetThrottle);
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::Yellow, FString::SanitizeFloat(metadata.TargetThrottle));
+	}
 }
 
 // Throttle value is between 0 and 1
@@ -40,7 +47,7 @@ float AMyAIController::GetThrottleVal() {
 float AMyAIController::CalcSteering() {
 	// Get closest point to spline
 	FVector AILocation = AICar->GetActorLocation();
-	FVector LocationToSteerTo = FindClosestLocationAlongAIPath(AILocation);
+	FVector LocationToSteerTo = FindClosestLocationAlongAIPath(AILocation, LookAheadDistance);
 	// Calculate steering angle
 	FRotator AIRotation = AICar->GetActorRotation();
 	FRotator SteerRotation = UKismetMathLibrary::FindLookAtRotation(AILocation, LocationToSteerTo);
@@ -62,14 +69,16 @@ float AMyAIController::GetBrakingVal() {
 	return BrakingVal;
 }
 
-FVector AMyAIController::FindClosestLocationAlongAIPath(FVector AILocation) {
-	float SplineOffset = 1500;
-	float DistAlongSpline = (CurrentSpline->GetDistanceAlongSplineAtLocation(AILocation, ESplineCoordinateSpace::World) + SplineOffset);
-	FVector LocationToFollow =  CurrentSpline->GetLocationAtDistanceAlongSpline(DistAlongSpline, ESplineCoordinateSpace::World);
-	DrawDebugSphere(GetWorld(), LocationToFollow, 15, 10, FColor::Blue, false, 0.1f);
+FVector AMyAIController::FindClosestLocationAlongAIPath(FVector point, float offset) {
+	float DistAlongSpline = CurrentSpline->SplineComponent->GetDistanceAlongSplineAtLocation(point, ESplineCoordinateSpace::World) + offset;
+	float splineLength = CurrentSpline->SplineComponent->GetSplineLength();
+	if (DistAlongSpline > splineLength)
+		DistAlongSpline -= splineLength;
+
+	FVector LocationToFollow = CurrentSpline->SplineComponent->GetLocationAtDistanceAlongSpline(DistAlongSpline, ESplineCoordinateSpace::World);
 	return LocationToFollow;
 }
 
 void AMyAIController::SetCurrentSpline(int8 SplineIndex) {
-	CurrentSpline = AIPathArray[SplineIndex]->FindComponentByClass<USplineComponent>();
+	CurrentSpline = AIPathArray[SplineIndex];
 }
