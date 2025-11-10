@@ -28,7 +28,7 @@ public:
 	AMyAIPath* CurrentSpline;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
-	float LookAheadDistance = 1500.f;
+	float MaxLookAheadDistance = 1500.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
 	float MaxSpeed = 4000.f;
@@ -46,7 +46,7 @@ public:
 	// void CalcThrottle();
 	float GetThrottleVal();
 
-	float CalcSteering();
+	float CalcSteering(float lookAheadDistance);
 	float GetSteeringVal();
 
 	// void CalcBreaking();

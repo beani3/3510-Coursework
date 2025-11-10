@@ -18,6 +18,8 @@ struct FPathMetadata
 
 	UPROPERTY(EditAnywhere)
 	float TargetSpeed = 0.f; // Ideal speed at the current point, used to determine throttle/braking values
+	UPROPERTY(EditAnywhere)
+	float LookAheadMultiplier = 0.f; // Ideal speed at the current point, used to determine throttle/braking values
 };
 
 
@@ -40,12 +42,6 @@ public:
 	int NumMetadataPoints = 50;
 
 	UPROPERTY(EditAnywhere, Category = "Spline")
-	float ThrottleCurvatureFactor = 50.f;
-
-	UPROPERTY(EditAnywhere, Category = "Spline")
-	float CurvatureCornerThreshold = 0.3f;
-
-	UPROPERTY(EditAnywhere, Category = "Spline")
 	float MaxExpectedCurvature = 5.f;
 
 	UPROPERTY(EditAnywhere, Category = "Spline")
@@ -53,9 +49,6 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Spline")
 	float MinCornerSpeed = 500.f;
-
-	UPROPERTY(EditAnywhere)
-	int BrakeLookbackPoints = 4;
 
 	UPROPERTY(EditAnywhere, Category = "Spline")
 	TArray<FPathMetadata> SplineMetadata;

@@ -27,11 +27,12 @@ void AMyAIController::BeginPlay() {
 void AMyAIController::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
-	AICar->GetVehicleMovementComponent()->SetSteeringInput(CalcSteering());
-
 	float DistAlongSpline = CurrentSpline->SplineComponent->GetDistanceAlongSplineAtLocation(AICar->GetActorLocation(), ESplineCoordinateSpace::World);
 	FPathMetadata metadata = CurrentSpline->GetMetadataAtDistance(DistAlongSpline);
-	FPathMetadata lookaheadMetadata = CurrentSpline->GetMetadataAtDistance(DistAlongSpline + LookAheadDistance);
+	float lookaheadDistance = MaxLookAheadDistance * metadata.LookAheadMultiplier;
+	AICar->GetVehicleMovementComponent()->SetSteeringInput(CalcSteering(MaxLookAheadDistance));
+
+	FPathMetadata lookaheadMetadata = CurrentSpline->GetMetadataAtDistance(DistAlongSpline + lookaheadDistance);
 	float normalisedSpeed = AICar->GetVehicleMovementComponent()->GetForwardSpeed() / MaxSpeed;
 	float normalisedTargetSpeed = metadata.TargetSpeed / MaxSpeed;
 	float lookaheadNormalisedTargetSpeed = lookaheadMetadata.TargetSpeed / MaxSpeed;
@@ -56,10 +57,10 @@ float AMyAIController::GetThrottleVal() {
 	return ThrottleVal;
 }
 
-float AMyAIController::CalcSteering() {
+float AMyAIController::CalcSteering(float lookAheadDistance) {
 	// Get closest point to spline
 	FVector AILocation = AICar->GetActorLocation();
-	FVector LocationToSteerTo = FindClosestLocationAlongAIPath(AILocation, LookAheadDistance);
+	FVector LocationToSteerTo = FindClosestLocationAlongAIPath(AILocation, lookAheadDistance);
 	// Calculate steering angle
 	FRotator AIRotation = AICar->GetActorRotation();
 	FRotator SteerRotation = UKismetMathLibrary::FindLookAtRotation(AILocation, LocationToSteerTo);

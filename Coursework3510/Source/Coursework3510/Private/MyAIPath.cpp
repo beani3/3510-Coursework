@@ -46,7 +46,7 @@ void AMyAIPath::BeginPlay()
 		float Curvature = (tangentDeltaA.Size() + tangentDeltaB.Size()) / pointDistance;
 		metadata.CurvatureNormalised = FMath::Clamp(Curvature / MaxExpectedCurvature, 0.f, 1.f);
 		metadata.TargetSpeed = FMath::Lerp(MaxStraightSpeed, MinCornerSpeed, metadata.CurvatureNormalised);
-
+		metadata.LookAheadMultiplier = FMath::Clamp(1.f - metadata.CurvatureNormalised, 0.f, 1.f);
 		SplineMetadata.Add(metadata);
 		SplineMetadataLocations.Add(pointSplineDistance);
 	}
