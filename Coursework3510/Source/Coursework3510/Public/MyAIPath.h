@@ -14,16 +14,10 @@ struct FPathMetadata
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere)
-	float CurvatureNormalised; // Angle diff from current point to next point
+	float CurvatureNormalised = 0.f; // Angle diff from current point to next point
 
 	UPROPERTY(EditAnywhere)
-	float TargetThrottle; // Ideal speed at the current point, used to determine throttle/braking values
-
-	UPROPERTY(EditAnywhere)
-	bool BrakeStart; // Flags brake zone start, used to slow down before tight corners
-
-	UPROPERTY(EditAnywhere)
-	bool IsApex; // Flags corner apex, used to end braking
+	float TargetSpeed = 0.f; // Ideal speed at the current point, used to determine throttle/braking values
 };
 
 
@@ -49,7 +43,19 @@ public:
 	float ThrottleCurvatureFactor = 50.f;
 
 	UPROPERTY(EditAnywhere, Category = "Spline")
+	float CurvatureCornerThreshold = 0.3f;
+
+	UPROPERTY(EditAnywhere, Category = "Spline")
 	float MaxExpectedCurvature = 5.f;
+
+	UPROPERTY(EditAnywhere, Category = "Spline")
+	float MaxStraightSpeed = 4000.f;
+
+	UPROPERTY(EditAnywhere, Category = "Spline")
+	float MinCornerSpeed = 500.f;
+
+	UPROPERTY(EditAnywhere)
+	int BrakeLookbackPoints = 4;
 
 	UPROPERTY(EditAnywhere, Category = "Spline")
 	TArray<FPathMetadata> SplineMetadata;

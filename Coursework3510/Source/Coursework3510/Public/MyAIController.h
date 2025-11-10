@@ -31,6 +31,15 @@ public:
 	float LookAheadDistance = 1500.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+	float MaxSpeed = 4000.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+	float ThrottleGain = 1.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+	float BrakeGain = 2.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
 	TArray<AMyAIPath*> AIPathArray;
 		
 	// AI Car getters 

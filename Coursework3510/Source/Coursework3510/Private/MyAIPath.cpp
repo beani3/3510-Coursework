@@ -20,26 +20,35 @@ void AMyAIPath::BeginPlay()
 	float splineLength = SplineComponent->GetSplineLength();
 	float pointDistance = splineLength / NumMetadataPoints;
 
+
+	bool inCorner = false;
+	float highestCurvature = 0.f;
+	int apexIndex = 0;
 	for (int i = 0; i < NumMetadataPoints; ++i)
 	{
 		FPathMetadata metadata;
 
-		float pointOneDistance = pointDistance * i;
-		float pointTwoDistance = pointDistance * (i+1);
+		float pointSplineDistance = pointDistance * i;
+		float pointBehindDistance = pointSplineDistance - pointDistance * 0.5f;
+		float pointAheadDistance = pointSplineDistance + pointDistance * 0.5f;
 
-		FVector point1 = SplineComponent->GetLocationAtDistanceAlongSpline(pointOneDistance, ESplineCoordinateSpace::World);
-		FVector point2 = SplineComponent->GetLocationAtDistanceAlongSpline(pointTwoDistance, ESplineCoordinateSpace::World);
-		DrawDebugSphere(GetWorld(), point1, 15, 10, FColor::Green, false, 15.f);
+		FVector point = SplineComponent->GetLocationAtDistanceAlongSpline(pointSplineDistance, ESplineCoordinateSpace::World);
+		DrawDebugSphere(GetWorld(), point, 15, 10, FColor::Green, false, 15.f);
 
-		FVector tangent1 = SplineComponent->GetTangentAtDistanceAlongSpline(pointOneDistance, ESplineCoordinateSpace::World);
-		FVector tangent2 = SplineComponent->GetTangentAtDistanceAlongSpline(pointTwoDistance, ESplineCoordinateSpace::World);
-		FVector tangentDelta = tangent2 - tangent1;
-		float Curvature = tangentDelta.Size() / pointDistance;
+		FVector tangent0 = SplineComponent->GetTangentAtDistanceAlongSpline(pointBehindDistance, ESplineCoordinateSpace::World);
+		FVector tangent1 = SplineComponent->GetTangentAtDistanceAlongSpline(pointSplineDistance, ESplineCoordinateSpace::World);
+		FVector tangent2 = SplineComponent->GetTangentAtDistanceAlongSpline(pointAheadDistance, ESplineCoordinateSpace::World);
+		tangent0.Normalize();
+		tangent1.Normalize();
+		tangent2.Normalize();
+		FVector tangentDeltaA = tangent1 - tangent0;
+		FVector tangentDeltaB = tangent2 - tangent1;
+		float Curvature = (tangentDeltaA.Size() + tangentDeltaB.Size()) / pointDistance;
 		metadata.CurvatureNormalised = FMath::Clamp(Curvature / MaxExpectedCurvature, 0.f, 1.f);
-		metadata.TargetThrottle = 1.f - metadata.CurvatureNormalised;
+		metadata.TargetSpeed = FMath::Lerp(MaxStraightSpeed, MinCornerSpeed, metadata.CurvatureNormalised);
 
 		SplineMetadata.Add(metadata);
-		SplineMetadataLocations.Add(pointOneDistance);
+		SplineMetadataLocations.Add(pointSplineDistance);
 	}
 }
 

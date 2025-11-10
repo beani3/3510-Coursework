@@ -31,10 +31,22 @@ void AMyAIController::Tick(float DeltaTime) {
 
 	float DistAlongSpline = CurrentSpline->SplineComponent->GetDistanceAlongSplineAtLocation(AICar->GetActorLocation(), ESplineCoordinateSpace::World);
 	FPathMetadata metadata = CurrentSpline->GetMetadataAtDistance(DistAlongSpline);
-	AICar->GetVehicleMovementComponent()->SetThrottleInput(metadata.TargetThrottle);
+	FPathMetadata lookaheadMetadata = CurrentSpline->GetMetadataAtDistance(DistAlongSpline + LookAheadDistance);
+	float normalisedSpeed = AICar->GetVehicleMovementComponent()->GetForwardSpeed() / MaxSpeed;
+	float normalisedTargetSpeed = metadata.TargetSpeed / MaxSpeed;
+	float lookaheadNormalisedTargetSpeed = lookaheadMetadata.TargetSpeed / MaxSpeed;
+	float speedError = normalisedTargetSpeed - normalisedSpeed;
+	float lookaheadSpeedError = lookaheadNormalisedTargetSpeed - normalisedSpeed;
+
+	float throttle = FMath::Clamp(speedError * ThrottleGain, 0.f, 1.f);
+	float brake = FMath::Clamp(-lookaheadSpeedError * BrakeGain, 0.f, 1.f);
+
+	AICar->GetVehicleMovementComponent()->SetThrottleInput(throttle);
+	AICar->GetVehicleMovementComponent()->SetBrakeInput(brake);
 	if (GEngine)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::Yellow, FString::SanitizeFloat(metadata.TargetThrottle));
+		GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::Yellow, FString::SanitizeFloat(metadata.TargetSpeed));
+		GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::Red, FString::SanitizeFloat(AICar->GetVehicleMovementComponent()->GetForwardSpeed()));
 	}
 }
 
