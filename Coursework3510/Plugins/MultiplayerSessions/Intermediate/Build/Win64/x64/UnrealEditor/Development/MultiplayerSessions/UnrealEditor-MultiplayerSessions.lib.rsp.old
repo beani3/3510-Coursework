@@ -6,13 +6,7 @@
 /NAME:"UnrealEditor-MultiplayerSessions.dll"
 /IGNORE:4221
 /NODEFAULTLIB
-"X:\3510-Coursework\Coursework3510\Intermediate\Build\Win64\x64\Coursework3510Editor\Development\UnrealEd\SharedPCH.UnrealEd.Project.ValApi.Cpp20.h.obj"
-"X:\3510-Coursework\Coursework3510\Plugins\MultiplayerSessions\Intermediate\Build\Win64\x64\UnrealEditor\Development\MultiplayerSessions\Menu.cpp.obj"
-"X:\3510-Coursework\Coursework3510\Plugins\MultiplayerSessions\Intermediate\Build\Win64\x64\UnrealEditor\Development\MultiplayerSessions\MultiplayerSessions.cpp.obj"
-"X:\3510-Coursework\Coursework3510\Plugins\MultiplayerSessions\Intermediate\Build\Win64\x64\UnrealEditor\Development\MultiplayerSessions\MultiplayerSessionsSubsystem.cpp.obj"
-"X:\3510-Coursework\Coursework3510\Plugins\MultiplayerSessions\Intermediate\Build\Win64\x64\UnrealEditor\Development\MultiplayerSessions\PerModuleInline.gen.cpp.obj"
-"X:\3510-Coursework\Coursework3510\Plugins\MultiplayerSessions\Intermediate\Build\Win64\x64\UnrealEditor\Development\MultiplayerSessions\Menu.gen.cpp.obj"
-"X:\3510-Coursework\Coursework3510\Plugins\MultiplayerSessions\Intermediate\Build\Win64\x64\UnrealEditor\Development\MultiplayerSessions\MultiplayerSessions.init.gen.cpp.obj"
-"X:\3510-Coursework\Coursework3510\Plugins\MultiplayerSessions\Intermediate\Build\Win64\x64\UnrealEditor\Development\MultiplayerSessions\MultiplayerSessionsSubsystem.gen.cpp.obj"
-"X:\3510-Coursework\Coursework3510\Plugins\MultiplayerSessions\Intermediate\Build\Win64\x64\UnrealEditor\Development\MultiplayerSessions\Default.rc2.res"
-/OUT:"X:\3510-Coursework\Coursework3510\Plugins\MultiplayerSessions\Intermediate\Build\Win64\x64\UnrealEditor\Development\MultiplayerSessions\UnrealEditor-MultiplayerSessions.lib"
+"C:\3510-Coursework\Coursework3510\Intermediate\Build\Win64\x64\Coursework3510Editor\Development\UnrealEd\SharedPCH.UnrealEd.Project.ValApi.Cpp20.h.obj"
+"C:\3510-Coursework\Coursework3510\Plugins\MultiplayerSessions\Intermediate\Build\Win64\x64\UnrealEditor\Development\MultiplayerSessions\Module.MultiplayerSessions.cpp.obj"
+"C:\3510-Coursework\Coursework3510\Plugins\MultiplayerSessions\Intermediate\Build\Win64\x64\UnrealEditor\Development\MultiplayerSessions\Default.rc2.res"
+/OUT:"C:\3510-Coursework\Coursework3510\Plugins\MultiplayerSessions\Intermediate\Build\Win64\x64\UnrealEditor\Development\MultiplayerSessions\UnrealEditor-MultiplayerSessions.lib"
