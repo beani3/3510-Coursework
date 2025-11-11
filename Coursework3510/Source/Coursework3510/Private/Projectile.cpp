@@ -2,121 +2,177 @@
 
 
 #include "Projectile.h"
-#include "Components/StaticMeshComponent.h"
+#include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/StaticMeshComponent.h"
+#include "Components/SphereComponent.h"
+#include "GameFramework/ProjectileMovementComponent.h"
 
-
-
-// Sets default values
 AProjectile::AProjectile()
 {
-	PrimaryActorTick.bCanEverTick = false;
+    PrimaryActorTick.bCanEverTick = false;
 
-	// Collision
-	Collision = CreateDefaultSubobject<USphereComponent>(TEXT("Collision"));
-	Collision->InitSphereRadius(16.f);
-	Collision->SetCollisionProfileName(TEXT("BlockAllDynamic")); // blocks world + pawns
-	Collision->SetGenerateOverlapEvents(false);
-	SetRootComponent(Collision);
+    // Replication
+    bReplicates = true;
+    SetReplicateMovement(true);
 
-	// Mesh
-	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));	
-	Mesh->SetupAttachment(Collision);
-	Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    // Collision
+    Collision = CreateDefaultSubobject<USphereComponent>(TEXT("Collision"));
+    Collision->InitSphereRadius(16.f);
+    Collision->SetCollisionProfileName(TEXT("BlockAllDynamic"));
+    Collision->SetGenerateOverlapEvents(false);
+    SetRootComponent(Collision);
 
-	// Movement
-	Move = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("Move"));
-	Move->SetUpdatedComponent(Collision);
-	Move->bRotationFollowsVelocity = true;
-	Move->ProjectileGravityScale = 0.f;
-	Move->bInitialVelocityInLocalSpace = false;
-	
+    // Mesh
+    Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
+    Mesh->SetupAttachment(Collision);
+    Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+    // Movement
+    Move = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("Move"));
+    Move->SetUpdatedComponent(Collision);
+    Move->bRotationFollowsVelocity = true;
+    Move->ProjectileGravityScale = 0.f;
+    Move->bInitialVelocityInLocalSpace = false;
 }
 
 void AProjectile::BeginPlay()
 {
-	Super::BeginPlay();
+    Super::BeginPlay();
 
-	
-	Collision->OnComponentHit.AddDynamic(this, &AProjectile::OnHit);// register hit event
-	Move->OnProjectileBounce.AddDynamic(this, &AProjectile::OnBounce);// register bounce event
-
-	if (Data && Data->LifeSeconds > 0.f)// set lifespan
-		SetLifeSpan(Data->LifeSeconds);
+    Collision->OnComponentHit.AddDynamic(this, &AProjectile::OnHit);
+    Move->OnProjectileBounce.AddDynamic(this, &AProjectile::OnBounce);
 }
 
-// Initialize from definition
+void AProjectile::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+    DOREPLIFETIME(AProjectile, DefPath);
+}
+
 void AProjectile::InitFromDef(const UProjectileDef* Def, AActor* InInstigator, USceneComponent* HomingTarget)
 {
-	Data = Def; InstigatorActor = InInstigator; check(Data);
+    Data = Def;
+    InstigatorActor = InInstigator;
+    check(Data);
 
-	if (UStaticMesh* M = Data->Mesh.LoadSynchronous())         Mesh->SetStaticMesh(M); // set mesh
-	if (UMaterialInterface* Mat = Data->MeshMaterial.LoadSynchronous()) Mesh->SetMaterial(0, Mat);// set material
+    // NEW: replicate the soft path from inside the class
+    DefPath = FSoftObjectPath(Def);
 
-	if (InstigatorActor) Collision->IgnoreActorWhenMoving(InstigatorActor, true);// ignore instigator for collision
+    ApplyVisualsFromDef(Data);
+    ApplyLifespanFromDef(Data);
 
-	// get shoot direction
-	const FVector ShootDir = GetActorTransform().GetRotation().GetForwardVector().GetSafeNormal();
+    if (InstigatorActor)
+    {
+        Collision->IgnoreActorWhenMoving(InstigatorActor, true);
+    }
 
-	// configure movement
-	Move->InitialSpeed = Data->Speed; // initial speed
-	Move->MaxSpeed = Data->Speed; // max speed
-	Move->bInitialVelocityInLocalSpace = false;          // velocity is in world-space
-	Move->Velocity = ShootDir * Data->Speed; // set velocity
-	Move->bRotationFollowsVelocity = true; //rotate to face direction
+    const FVector ShootDir = GetActorTransform().GetRotation().GetForwardVector().GetSafeNormal();
 
-	Move->bShouldBounce = (Data->Behavior == EProjBehavior::Bouncy);
-	Move->Bounciness = 0.5f;
-	Move->Friction = 0.2f;
+    Move->InitialSpeed = Data->Speed;
+    Move->MaxSpeed = Data->Speed;
+    Move->bInitialVelocityInLocalSpace = false;
+    Move->Velocity = ShootDir * Data->Speed;
+    Move->bRotationFollowsVelocity = true;
 
-	const bool bHoming = (Data->Behavior == EProjBehavior::Homing);
-	Move->bIsHomingProjectile = bHoming;
-	if (bHoming && HomingTarget)
-	{
-		Move->HomingTargetComponent = HomingTarget;
-		Move->HomingAccelerationMagnitude = 8000.f;
-	}
+    Move->bShouldBounce = (Data->Behavior == EProjBehavior::Bouncy);
+    Move->Bounciness = 0.5f;
+    Move->Friction = 0.2f;
 
-	// Play fire sound ( not used yet)
-	if (!Data->FireSFX.IsNull())
-		UGameplayStatics::PlaySoundAtLocation(this, Data->FireSFX.LoadSynchronous(), GetActorLocation());
+    const bool bHoming = (Data->Behavior == EProjBehavior::Homing);
+    Move->bIsHomingProjectile = bHoming;
+    if (bHoming && HomingTarget)
+    {
+        Move->HomingTargetComponent = HomingTarget;
+        Move->HomingAccelerationMagnitude = 8000.f;
+    }
+
+    if (!Data->FireSFX.IsNull())
+    {
+        UGameplayStatics::PlaySoundAtLocation(this, Data->FireSFX.LoadSynchronous(), GetActorLocation());
+    }
+}
+
+void AProjectile::OnRep_DefPath()
+{
+    if (!Data && DefPath.IsValid())
+    {
+        if (const UProjectileDef* Loaded = Cast<UProjectileDef>(DefPath.TryLoad()))
+        {
+            Data = Loaded;
+            ApplyVisualsFromDef(Data);
+            ApplyLifespanFromDef(Data);
+        }
+    }
+}
+
+void AProjectile::ApplyVisualsFromDef(const UProjectileDef* Def)
+{
+    if (!Def) return;
+
+    if (UStaticMesh* M = Def->Mesh.LoadSynchronous())
+    {
+        Mesh->SetStaticMesh(M);
+    }
+    if (UMaterialInterface* Mat = Def->MeshMaterial.LoadSynchronous())
+    {
+        Mesh->SetMaterial(0, Mat);
+    }
+}
+
+void AProjectile::ApplyLifespanFromDef(const UProjectileDef* Def)
+{
+    if (Def && Def->LifeSeconds > 0.f)
+    {
+        SetLifeSpan(Def->LifeSeconds);
+    }
 }
 
 bool AProjectile::ShouldBounceOff(const AActor* Other) const
 {
-	if (!Other) return true;
-	for (const FName& N : Data->NoBounceTags) if (Other->ActorHasTag(N)) return false;
-	if (Data->AllowedBounceTags.Num() == 0) return true;
-	for (const FName& A : Data->AllowedBounceTags) if (Other->ActorHasTag(A)) return true;
-	return false;
+    if (!Other || !Data) return true;
+
+    for (const FName& N : Data->NoBounceTags)
+        if (Other->ActorHasTag(N)) return false;
+
+    if (Data->AllowedBounceTags.Num() == 0) return true;
+
+    for (const FName& A : Data->AllowedBounceTags)
+        if (Other->ActorHasTag(A)) return true;
+
+    return false;
 }
 
 void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* Other, UPrimitiveComponent* OtherComp,
-	FVector NormalImpulse, const FHitResult& Hit)
+    FVector NormalImpulse, const FHitResult& Hit)
 {
-	if (!Move->bShouldBounce || !ShouldBounceOff(Other))
-	{
-		// Play impact sound (not used yet)
-		if (!Data->ImpactSFX.IsNull())
-			UGameplayStatics::PlaySoundAtLocation(this, Data->ImpactSFX.LoadSynchronous(), Hit.ImpactPoint);
-		// Destroy projectile
-		Die();
-	}
+    if (!Data) { Die(); return; }
+
+    if (!Move->bShouldBounce || !ShouldBounceOff(Other))
+    {
+        if (!Data->ImpactSFX.IsNull())
+        {
+            UGameplayStatics::PlaySoundAtLocation(this, Data->ImpactSFX.LoadSynchronous(), Hit.ImpactPoint);
+        }
+        Die();
+    }
 }
 
 void AProjectile::OnBounce(const FHitResult& Impact, const FVector& Vel)
 {
-	if (++BounceCount >= Data->MaxBounces)
-	{
-		// Play impact sound (not used yet)
-		if (!Data->ImpactSFX.IsNull())
-			UGameplayStatics::PlaySoundAtLocation(this, Data->ImpactSFX.LoadSynchronous(), Impact.ImpactPoint);
-		// Destroy projectile
-		Die();
-	}
+    if (!Data) { Die(); return; }
+
+    if (++BounceCount >= Data->MaxBounces)
+    {
+        if (!Data->ImpactSFX.IsNull())
+        {
+            UGameplayStatics::PlaySoundAtLocation(this, Data->ImpactSFX.LoadSynchronous(), Impact.ImpactPoint);
+        }
+        Die();
+    }
 }
 
-void AProjectile::Die() // destroy projectile
+void AProjectile::Die()
 {
-	Destroy();
+    Destroy();
 }

@@ -29,6 +29,7 @@
 
 
 #include "GM_RaceManager.h"
+#include "GS_RaceState.h"
 #include "ProjectileDef.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogCarReset, Log, All);
@@ -72,36 +73,26 @@ void AMyPlayerCar::BeginPlay() {
 
 	InitRacetrackSpline();
 
-	// Initialize Health
-	if (AC_Health)
+	if (AC_Health) { AC_Health->InitializeHealth(); }
+	if (AC_Projectile && Muzzle) { AC_Projectile->SetMuzzle(Muzzle); }
+
+	// --- Bind to GameState events (works on server & clients) ---
+	if (AGS_RaceState* RS = GetWorld() ? GetWorld()->GetGameState<AGS_RaceState>() : nullptr)
 	{
-		AC_Health->InitializeHealth();
-	}
+		RS->OnRaceStarted.AddDynamic(this, &AMyPlayerCar::OnRaceStarted);
+		RS->OnRaceFinished.AddDynamic(this, &AMyPlayerCar::OnRaceFinished);
 
-	// Set Muzzle on Projectile Component
-	if (AC_Projectile && Muzzle)
-	{
-		AC_Projectile->SetMuzzle(Muzzle);
-	}
-
-
-
-
-
-	// Get Game Mode and cast to GM_RaceManager to bind race events
-	AGameModeBase* GameMode = UGameplayStatics::GetGameMode(this);
-	if (GameMode)
-	{
-		AGM_RaceManager* RaceManager = Cast<AGM_RaceManager>(GameMode);
-		if (RaceManager)
+		// If we joined mid-race, apply current state immediately
+		if (RS->bRaceRunning && !RS->bRaceFinished)
 		{
-			GMRaceRef = RaceManager;
-			// Bind OnStarted event
-			RaceManager->OnStarted.AddDynamic(this, &AMyPlayerCar::OnRaceStarted);
-			// Bind OnFinished event
-			RaceManager->OnFinished.AddDynamic(this, &AMyPlayerCar::OnRaceFinished);
+			OnRaceStarted();
+		}
+		else if (RS->bRaceFinished)
+		{
+			OnRaceFinished();
 		}
 	}
+
 
 
 	// Input mapping context 
