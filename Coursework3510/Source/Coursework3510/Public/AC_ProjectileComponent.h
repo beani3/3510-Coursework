@@ -4,51 +4,46 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "ItemTypes.h"
 #include "ProjectileDef.h"
 #include "AC_ProjectileComponent.generated.h"
 
 class AProjectile;
 class USceneComponent;
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class COURSEWORK3510_API UAC_ProjectileComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
-public:	
+public:
 	UAC_ProjectileComponent();
 
-
 protected:
-	// Called when the game starts
 	virtual void BeginPlay() override;
 
 public:
-	// Projectile class to spawn
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
 	TSubclassOf<AProjectile> ProjectileClass;
 
-	// Fallback local offset if no muzzle is set 
+	// Local spawn offset (applied relative to the chosen muzzle/world TM)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
 	FTransform MuzzleOffset;
 
-	// Explicitly set the muzzle from BP
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
 	void SetMuzzle(USceneComponent* InMuzzle) { MuzzleComponent = InMuzzle; }
 
-	// Fire from the muzzle
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
 	bool FireByDef(const UProjectileDef* Def, USceneComponent* HomingTarget = nullptr);
 
 private:
-	// Muzzle component
-	UPROPERTY() USceneComponent* MuzzleComponent = nullptr; 
+	// === Networking ===
+	UFUNCTION(Server, Reliable)
+	void ServerFireByDef(const UProjectileDef* Def, USceneComponent* HomingTarget = nullptr);
 
-	// Resolve the muzzle component
+	// === Muzzle helpers ===
+	UPROPERTY() USceneComponent* MuzzleComponent = nullptr;
 	USceneComponent* ResolveMuzzle() const;
-
-	// Build the spawn transform
 	FTransform BuildSpawnTM() const;
+	void PlayMuzzleFX(const FTransform& SpawnTM);
 };
 

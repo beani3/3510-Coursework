@@ -1,226 +1,95 @@
 #include "GM_RaceManager.h"
-#include "Engine/World.h"
+#include "GS_RaceState.h"
 #include "TimerManager.h"
-#include "Engine/Engine.h"
-#include "GameFramework/PlayerController.h"
-#include "Blueprint/WidgetBlueprintLibrary.h"
-#include "Blueprint/WidgetLayoutLibrary.h"
-#include "Kismet/GameplayStatics.h"
 
-AGM_RaceManager::AGM_RaceManager()
+void AGM_RaceManager::StartRaceWithCountdown(float Seconds)
 {
-	MaxRaceTime = 0.f;
-	CourtesyTime = 10.f;
-	TotalLaps = 2;
-	ElapsedTime = 0.f;
-	bRaceRunning = false;
-	bRaceFinished = false;
-	TotalPlayers = 1;
-	PlayersFinished = 0;
+	if (!HasAuthority()) return;
+
+	if (AGS_RaceState* RS = GetGameState<AGS_RaceState>())
+	{
+		const double Now = RS->GetServerWorldTimeSeconds();
+		RS->TotalLaps = Config_TotalLaps;
+		RS->bRaceFinished = false;
+		RS->bRaceRunning = false;
+		RS->CountdownEndServerTime = Now + Seconds;
+
+		// server-local refresh if you show countdown on host
+		RS->OnRep_Countdown();
+
+		GetWorldTimerManager().ClearTimer(TH_CountdownDone);
+		GetWorldTimerManager().SetTimer(TH_CountdownDone, this, &AGM_RaceManager::HandleCountdownFinished, Seconds, false);
+	}
 }
 
-void AGM_RaceManager::BeginPlay()
+void AGM_RaceManager::HandleCountdownFinished()
 {
-	Super::BeginPlay();
+	if (!HasAuthority()) return;
 
-
-	TotalPlayers = 0;// Count active player controllers
-	if (GetWorld())
+	if (AGS_RaceState* RS = GetGameState<AGS_RaceState>())
 	{
-		for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+		const double Now = RS->GetServerWorldTimeSeconds();
+		RS->RaceStartServerTime = Now;
+		RS->bRaceRunning = true;
+
+		// Host/server UI
+		OnStarted.Broadcast();
+
+		// Fire server-side now; clients will fire via replication
+		RS->OnRep_RaceFlags();
+	}
+}
+
+void AGM_RaceManager::HandleCourtesyEnd()
+{
+	if (!HasAuthority()) return;
+
+	if (AGS_RaceState* RS = GetGameState<AGS_RaceState>())
+	{
+		RS->bRaceRunning = false;
+		RS->bRaceFinished = true;
+
+		OnFinished.Broadcast();
+		RS->OnRep_RaceFlags();
+	}
+}
+
+void AGM_RaceManager::ForceFinishRace(float CourtesySeconds)
+{
+	if (!HasAuthority()) return;
+
+	if (AGS_RaceState* RS = GetGameState<AGS_RaceState>())
+	{
+		const double Now = RS->GetServerWorldTimeSeconds();
+		RS->RaceEndServerTime = Now + CourtesySeconds;
+		RS->bRaceRunning = false;
+		RS->bRaceFinished = true;
+
+		OnFinished.Broadcast();
+		RS->OnRep_RaceFlags();
+
+		// Optional: also start a timer that calls HandleCourtesyEnd after CourtesySeconds
+		GetWorldTimerManager().ClearTimer(TH_CourtesyEnd);
+		if (CourtesySeconds > 0.f)
 		{
-			TotalPlayers++;
-		}
-	}
-	PlayersFinished = 0;
-	bRaceFinished = false;
-	bRaceRunning = false;
-	ElapsedTime = 0.f;
-}
-
-void AGM_RaceManager::EndPlay(const EEndPlayReason::Type EndPlayReason) //when the game ends
-{
-	if (GetWorld())
-	{
-		GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
-	}
-	Super::EndPlay(EndPlayReason);
-}
-
-void AGM_RaceManager::StartRace() //starts the race
-{
-	if (bRaceRunning || bRaceFinished) return;
-
-	ElapsedTime = 0.f;
-	bRaceRunning = true;
-	bRaceFinished = false;
-	PlayersFinished = 0;
-
-	if (GetWorld())
-	{
-		GetWorld()->GetTimerManager().SetTimer(TimerHandle_Tick, this, &AGM_RaceManager::TickTimer, 0.05f, true);
-		if (MaxRaceTime > 0.f)
-		{
-			GetWorld()->GetTimerManager().SetTimer(TimerHandle_RaceDuration, this, &AGM_RaceManager::OnRaceDurationExpired, MaxRaceTime, false);
-		}
-	}
-
-	BP_OnRaceStarted(); //Notifier, UI updates, etc.
-	if (GEngine)
-	{
-		FString Message = FString::Printf(TEXT("GM_RaceManager: Race started"));
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, Message);
-	}
-	OnStarted.Broadcast();
-}
-
-void AGM_RaceManager::StartRaceWithCountdown(float CountdownSeconds) //starts the race with a timer editabl in blueprints
-{
-	if (bRaceRunning || bRaceFinished) return;
-	if (CountdownSeconds <= 0.f)
-	{
-		StartRace();
-		return;
-	}
-	if (GetWorld())
-	{
-		GetWorld()->GetTimerManager().SetTimer(TimerHandle_Countdown, this, &AGM_RaceManager::OnCountdownComplete, CountdownSeconds, false);
-		if (GEngine)
-		{
-			FString Message = FString::Printf(TEXT("GM_RaceManager: Countdown started for %f seconds"), CountdownSeconds);
-			GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, Message);
+			GetWorldTimerManager().SetTimer(TH_CourtesyEnd, this, &AGM_RaceManager::HandleCourtesyEnd, CourtesySeconds, false);
 		}
 	}
 }
 
-float AGM_RaceManager::GetCountdownRemaining() const //returns the time remaining in the countdown
+void AGM_RaceManager::RestartRace()
 {
-	if (GetWorld())
+	if (!HasAuthority()) return;
+
+	GetWorldTimerManager().ClearTimer(TH_CountdownDone);
+	GetWorldTimerManager().ClearTimer(TH_CourtesyEnd);
+
+	if (AGS_RaceState* RS = GetGameState<AGS_RaceState>())
 	{
-		return GetWorld()->GetTimerManager().GetTimerRemaining(TimerHandle_Countdown);
-	}
-	return 0.f;
-}
-
-float AGM_RaceManager::GetElapsedTime() const //returns the elapsed time since the race started
-{
-	if (GetWorld())
-	{
-		return GetWorld()->GetTimerManager().GetTimerRemaining(TimerHandle_RaceDuration);
-	}
-	return 0.f;
-}
-
-void AGM_RaceManager::OnCountdownComplete() //called when the countdown completes
-{
-	StartRace();
-}
-
-void AGM_RaceManager::TickTimer()
-{
-	if (!bRaceRunning || bRaceFinished) return;
-	ElapsedTime += 0.05f;
-}
-
-void AGM_RaceManager::NotifyPlayerFinished() //called when a player finishes the race
-{
-	if (!bRaceRunning || bRaceFinished) return;
-
-	PlayersFinished++;
-
-	BP_OnPlayerFinished(PlayersFinished, ElapsedTime); // Notifier, UI updates, etc.
-	if (GEngine)
-	{
-		FString Message = FString::Printf(TEXT("GM_RaceManager: Player finished (%d/%d) at time %f"), PlayersFinished, TotalPlayers, ElapsedTime);
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, Message);
-	}
-
-	if (PlayersFinished == 1 && CourtesyTime > 0.f && GetWorld()) //Courtesy timer starts
-	{
-		GetWorld()->GetTimerManager().SetTimer(TimerHandle_Courtesy, this, &AGM_RaceManager::OnCourtesyExpired, CourtesyTime, false);
-		if (GEngine)
-		{
-			FString Message = FString::Printf(TEXT("GM_RaceManager: Courtesy time started (%f seconds)"), CourtesyTime);
-			GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, Message);
-		}
-	}
-
-
-	if (PlayersFinished >= TotalPlayers)// If everyone finished, end immediately
-	{
-		FinishRaceInternal();
+		RS->bRaceRunning = false;
+		RS->bRaceFinished = false;
+		RS->CountdownEndServerTime = 0.0;
+		RS->RaceStartServerTime = 0.0;
+		RS->RaceEndServerTime = 0.0;
 	}
 }
-
-void AGM_RaceManager::OnCourtesyExpired() //called when the courtesy timer expires
-{
-	if (GEngine)
-	{
-		FString Message = FString::Printf(TEXT("GM_RaceManager: Courtesy expired — ending race"));
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, Message);
-	}
-	FinishRaceInternal();
-}
-
-void AGM_RaceManager::OnRaceDurationExpired() //called when max time reached
-{
-	if (GEngine)
-	{
-		FString Message = FString::Printf(TEXT("GM_RaceManager: Max race time expired — ending race"));
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, Message);
-	}
-	FinishRaceInternal();
-}
-
-void AGM_RaceManager::FinishRaceInternal()
-{
-	if (bRaceFinished) return;
-
-	if (GetWorld())
-	{
-		GetWorld()->GetTimerManager().ClearTimer(TimerHandle_Tick);
-		GetWorld()->GetTimerManager().ClearTimer(TimerHandle_RaceDuration);
-		GetWorld()->GetTimerManager().ClearTimer(TimerHandle_Countdown);
-		GetWorld()->GetTimerManager().ClearTimer(TimerHandle_Courtesy);
-	}
-
-	bRaceFinished = true;
-	bRaceRunning = false;
-
-	BP_OnRaceEnded();
-	if (GEngine)
-	{
-		FString Message = FString::Printf(TEXT("GM_RaceManager: Race ended (elapsed %f)"), ElapsedTime);
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, Message);
-	}
-	OnFinished.Broadcast();
-}
-
-void AGM_RaceManager::EndRace()
-{
-	FinishRaceInternal();
-}
-
-
-
-
-void AGM_RaceManager::CallCreateLobby()
-{
-	UWorld* World = GetWorld();
-	{
-		
-		World->ServerTravel("/Game/Levels/MossyMeadows?listen");
-	}
-}
-
-void AGM_RaceManager::CallClientTravel(const FString& Address)
-{
-	APlayerController* PlayerController = GetGameInstance()->GetFirstLocalPlayerController();
-	if (PlayerController)
-	{
-		
-		PlayerController->ClientTravel(Address, ETravelType::TRAVEL_Absolute);
-	}
-}
-
-

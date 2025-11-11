@@ -6,53 +6,64 @@
 #include "GameFramework/Actor.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/SphereComponent.h"
-#include "ItemTypes.h"
+#include "UObject/SoftObjectPath.h"         // FSoftObjectPath
 #include "ProjectileDef.h"
 #include "Projectile.generated.h"
 
 UCLASS()
 class COURSEWORK3510_API AProjectile : public AActor
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
-	
-	AProjectile();
-	// Initialize from definition
-	void InitFromDef(const UProjectileDef* Def, AActor* InInstigator, USceneComponent* HomingTarget);
+    AProjectile();
+
+    // Initialize from definition (server only)
+    void InitFromDef(const UProjectileDef* Def, AActor* InInstigator, USceneComponent* HomingTarget);
 
 protected:
-	virtual void BeginPlay() override;
+    virtual void BeginPlay() override;
+    virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	// collision component
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	USphereComponent* Collision = nullptr;
+    // --- Components ---
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+    USphereComponent* Collision = nullptr;
 
-	// mesh component
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	UStaticMeshComponent* Mesh = nullptr;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+    UStaticMeshComponent* Mesh = nullptr;
 
-	// movement component
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	UProjectileMovementComponent* Move = nullptr;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+    UProjectileMovementComponent* Move = nullptr;
 
+    // --- Data & replication ---
+    // Replicated soft path so clients can load the same Def for visuals/lifespan
+    UPROPERTY(ReplicatedUsing = OnRep_DefPath)
+    FSoftObjectPath DefPath;
 
-	// definition data
-	UPROPERTY() const UProjectileDef* Data = nullptr;
-	// instigator actor
-	UPROPERTY() AActor* InstigatorActor = nullptr;
+    // Resolved def (not replicated)
+    UPROPERTY(Transient)
+    const UProjectileDef* Data = nullptr;
 
-	// bounce count
-	int32 BounceCount = 0;
+    UPROPERTY(Transient)
+    AActor* InstigatorActor = nullptr;
 
-	// handle hit event
-	UFUNCTION() void OnHit(UPrimitiveComponent* HitComp, AActor* Other, UPrimitiveComponent* OtherComp,
-		FVector NormalImpulse, const FHitResult& Hit);
-	// handle bounce event
-	UFUNCTION() void OnBounce(const FHitResult& Impact, const FVector& Vel);
+    UFUNCTION()
+    void OnRep_DefPath();
 
-	// check if should bounce off the other actor
-	bool ShouldBounceOff(const AActor* Other) const;
-	// destroy the projectile
-	void Die();
+    // Helpers used by InitFromDef and OnRep_DefPath
+    void ApplyVisualsFromDef(const UProjectileDef* Def);
+    void ApplyLifespanFromDef(const UProjectileDef* Def);
+
+    // --- Bounce/Hit ---
+    int32 BounceCount = 0;
+
+    UFUNCTION()
+    void OnHit(UPrimitiveComponent* HitComp, AActor* Other, UPrimitiveComponent* OtherComp,
+        FVector NormalImpulse, const FHitResult& Hit);
+
+    UFUNCTION()
+    void OnBounce(const FHitResult& Impact, const FVector& Vel);
+
+    bool ShouldBounceOff(const AActor* Other) const;
+    void Die();
 };
