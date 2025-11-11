@@ -3,3 +3,8 @@
 
 #include "GIC_RacingGameInstance.h"
 
+void UGIC_RacingGameInstance::Init()
+{
+	Super::Init();
+	bIsServer = false;
+}

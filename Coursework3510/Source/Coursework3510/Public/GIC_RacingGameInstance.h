@@ -13,5 +13,12 @@ UCLASS()
 class COURSEWORK3510_API UGIC_RacingGameInstance : public UGameInstance
 {
 	GENERATED_BODY()
+
+public:
+
+	virtual void Init() override;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Multiplayer")
+	bool bIsServer = false;
 	
 };
