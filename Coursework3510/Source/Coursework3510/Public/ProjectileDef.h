@@ -6,37 +6,44 @@
 #include "PowerItemDef.h"
 #include "ProjectileDef.generated.h"
 
-// Projectile behavior types
+class AProjectile;
+class UStaticMesh;
+class UMaterialInterface;
+class USoundBase;
+
 UENUM(BlueprintType)
 enum class EProjBehavior : uint8 { Bouncy, Homing };
 
-// Definition for projectile power items
 UCLASS(BlueprintType)
 class COURSEWORK3510_API UProjectileDef : public UPowerItemDef
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
-	// Set kind to Projectile
-	UProjectileDef() { Kind = EPowerItemKind::Projectile; }
+    UProjectileDef() { Kind = EPowerItemKind::Projectile; }
 
-	// Behavior type
-	UPROPERTY(EditAnywhere, BlueprintReadOnly) EProjBehavior Behavior = EProjBehavior::Bouncy;
+    // === Spawn class (let the asset choose which projectile to spawn) ===
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Projectile")
+    TSubclassOf<AProjectile> ProjectileClass;
 
-	// Projectile Movement
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0")) float Speed = 2400.f;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0")) float LifeSeconds = 6.f;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0")) int32 MaxBounces = 6;
+    // Behavior
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Behavior")
+    EProjBehavior Behavior = EProjBehavior::Bouncy;
 
-	// Bounce filters 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly) TArray<FName> AllowedBounceTags;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly) TArray<FName> NoBounceTags;
+    // Movement
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Params", meta = (ClampMin = "0")) float Speed = 2400.f;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Params", meta = (ClampMin = "0")) float LifeSeconds = 6.f;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Params", meta = (ClampMin = "0")) int32 MaxBounces = 6;
 
-	// Visuals
-	UPROPERTY(EditAnywhere, BlueprintReadOnly) TSoftObjectPtr<UStaticMesh> Mesh;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly) TSoftObjectPtr<UMaterialInterface> MeshMaterial;
+    // Bounce filters
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bounce") TArray<FName> AllowedBounceTags;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bounce") TArray<FName> NoBounceTags;
 
-	// Sounds (Not Used Yet)
-	UPROPERTY(EditAnywhere, BlueprintReadOnly) TSoftObjectPtr<USoundBase> FireSFX;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly) TSoftObjectPtr<USoundBase> ImpactSFX;
+    // Visuals
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Visual") TSoftObjectPtr<UStaticMesh> Mesh;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Visual") TSoftObjectPtr<UMaterialInterface> MeshMaterial;
+
+    // Sounds (optional)
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Audio") TSoftObjectPtr<USoundBase> FireSFX;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Audio") TSoftObjectPtr<USoundBase> ImpactSFX;
 };

@@ -20,44 +20,47 @@ void UAC_ProjectileComponent::BeginPlay()
 	Super::BeginPlay();
 }
 
+TSubclassOf<AProjectile> UAC_ProjectileComponent::ResolveProjectileClass(const UProjectileDef* Def) const
+{
+	if (Def && Def->ProjectileClass)   return Def->ProjectileClass;   // prefer asset
+	if (ProjectileClass)               return ProjectileClass;         // fallback to component
+	return AProjectile::StaticClass();                                 // final fallback
+}
+
+
 bool UAC_ProjectileComponent::FireByDef(const UProjectileDef* Def, USceneComponent* HomingTarget)
 {
-	if (!Def || !ProjectileClass || !GetOwner() || !GetWorld())
-		return false;
+	if (!GetWorld() || !GetOwner() || !Def) return false;
 
-	// Client -> ask server to spawn
 	if (!GetOwner()->HasAuthority())
 	{
 		ServerFireByDef(Def, HomingTarget);
 		return true;
 	}
 
-	// === SERVER ONLY ===
 	const FTransform SpawnTM = BuildSpawnTM();
 
+	//  use def-provided class
+	const TSubclassOf<AProjectile> ClassToSpawn = ResolveProjectileClass(Def);
+	if (!*ClassToSpawn)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[ProjComp] No projectile class (Def/Component)."));
+		return false;
+	}
+
 	AProjectile* Proj = GetWorld()->SpawnActorDeferred<AProjectile>(
-		ProjectileClass,
+		ClassToSpawn,
 		SpawnTM,
 		GetOwner(),
 		Cast<APawn>(GetOwner()),
 		ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
 
-	if (!Proj)
-		return false;
+	if (!Proj) return false;
 
-	// Provide full init server-side (sets visuals + movement)
-	Proj->InitFromDef(Def, GetOwner(), HomingTarget);
-
-	
+	Proj->InitFromDef(Def, GetOwner(), HomingTarget);  // sets visuals, speed, homing, lifespan (and DefPath internally)
 	UGameplayStatics::FinishSpawningActor(Proj, SpawnTM);
 
 	PlayMuzzleFX(SpawnTM);
-
-	UE_LOG(LogTemp, Log, TEXT("[ProjComp] Fired %s from %s | Fwd=%s"),
-		*GetNameSafe(Proj),
-		*SpawnTM.GetLocation().ToString(),
-		*SpawnTM.GetRotation().GetForwardVector().ToString());
-
 	return true;
 }
 

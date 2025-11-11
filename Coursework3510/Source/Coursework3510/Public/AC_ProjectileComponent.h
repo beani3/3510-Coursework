@@ -45,5 +45,7 @@ private:
 	USceneComponent* ResolveMuzzle() const;
 	FTransform BuildSpawnTM() const;
 	void PlayMuzzleFX(const FTransform& SpawnTM);
+
+	TSubclassOf<AProjectile> ResolveProjectileClass(const UProjectileDef* Def) const;
 };
 
