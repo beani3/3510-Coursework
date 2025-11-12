@@ -12,7 +12,10 @@ void AGM_RaceManager::StartRaceWithCountdown(float Seconds)
 		RS->TotalLaps = Config_TotalLaps;
 		RS->bRaceFinished = false;
 		RS->bRaceRunning = false;
+		
 		RS->CountdownEndServerTime = Now + Seconds;
+
+		RS->NotifyCountdownStarted();
 
 		// server-local refresh if you show countdown on host
 		RS->OnRep_Countdown();

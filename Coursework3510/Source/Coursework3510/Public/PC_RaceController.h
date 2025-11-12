@@ -17,7 +17,7 @@ class COURSEWORK3510_API APC_RaceController : public APlayerController
 public:
 	APC_RaceController();
 
-	/** Call this from input (ESC / Start button etc.) */
+	
 	UFUNCTION(BlueprintCallable, Category = "Race|UI")
 	void RequestSetPaused(bool bPause);
 
@@ -32,11 +32,11 @@ protected:
 	void MulticastApplyPaused(bool bPause);
 
 	/* ===== UI ===== */
-	/** Pause menu widget class (assign in BP/Defaults) */
+
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> PauseMenuWidgetClass;
 
-	/** Countdown widget class if you’re also using it here (optional) */
+	
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> CountdownWidgetClass;
 
@@ -44,11 +44,12 @@ private:
 	UPROPERTY() UUserWidget* PauseMenuWidget = nullptr;
 	UPROPERTY() UUserWidget* CountdownWidget = nullptr;
 
-	/* Helpers to open/close pause menu consistently */
+	
 	void ShowPauseMenu();
 	void HidePauseMenu();
 
-	/* Optional: Race state hooks if you want to hide countdown on start/finish */
+	UFUNCTION()
+	void HandleCountdownStarted();
 	UFUNCTION()
 	void OnRaceStarted();
 	UFUNCTION()

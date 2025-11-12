@@ -14,6 +14,7 @@ void AGS_RaceState::BeginPlay()
 	Super::BeginPlay();
 	bPrevRaceRunning = bRaceRunning;
 	bPrevRaceFinished = bRaceFinished;
+	bPrevCountdownActive = IsCountdownActive();
 }
 
 void AGS_RaceState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -44,12 +45,27 @@ void AGS_RaceState::OnRep_RaceFlags()
 
 void AGS_RaceState::OnRep_Countdown()
 {
-	// optional: refresh countdown UI
+	
+	const bool bNowActive = IsCountdownActive();
+	if (!bPrevCountdownActive && bNowActive)
+	{
+		OnCountdownStarted.Broadcast();
+	}
+		
+	bPrevCountdownActive = bNowActive;
+	
 }
 
 float AGS_RaceState::GetCountdownSecondsRemaining() const
 {
 	return FMath::Max(0.0, CountdownEndServerTime - GetServerWorldTimeSeconds());
+}
+
+void AGS_RaceState::NotifyCountdownStarted()
+{
+	// Server/host local notify; clients get it via OnRep_Countdown
+	OnCountdownStarted.Broadcast();
+	bPrevCountdownActive = IsCountdownActive();
 }
 
 float AGS_RaceState::GetElapsedRaceSeconds() const

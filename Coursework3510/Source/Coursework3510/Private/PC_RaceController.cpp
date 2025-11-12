@@ -22,7 +22,7 @@ void APC_RaceController::BeginPlay()
 		CountdownWidget = CreateWidget<UUserWidget>(this, CountdownWidgetClass);
 		if (CountdownWidget)
 		{
-			CountdownWidget->AddToViewport();
+			CountdownWidget->AddToViewport(40);
 			CountdownWidget->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
@@ -32,6 +32,20 @@ void APC_RaceController::BeginPlay()
 	{
 		RS->OnRaceStarted.AddDynamic(this, &APC_RaceController::OnRaceStarted);
 		RS->OnRaceFinished.AddDynamic(this, &APC_RaceController::OnRaceFinished);
+		if (RS->IsCountdownActive() && CountdownWidget)
+		{
+			CountdownWidget->SetVisibility(ESlateVisibility::Visible);
+		}
+	}
+
+	
+}
+
+void APC_RaceController::HandleCountdownStarted()
+{
+	if (CountdownWidget)
+	{
+		CountdownWidget->SetVisibility(ESlateVisibility::Visible);
 	}
 }
 

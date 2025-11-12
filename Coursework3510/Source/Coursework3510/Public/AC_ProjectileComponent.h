@@ -13,39 +13,37 @@ class USceneComponent;
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class COURSEWORK3510_API UAC_ProjectileComponent : public UActorComponent
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
-	UAC_ProjectileComponent();
+    UAC_ProjectileComponent();
 
 protected:
-	virtual void BeginPlay() override;
+    virtual void BeginPlay() override;
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
-	TSubclassOf<AProjectile> ProjectileClass;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+    TSubclassOf<AProjectile> ProjectileClass;
 
-	// Local spawn offset (applied relative to the chosen muzzle/world TM)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
-	FTransform MuzzleOffset;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+    FTransform MuzzleOffset;
 
-	UFUNCTION(BlueprintCallable, Category = "Projectile")
-	void SetMuzzle(USceneComponent* InMuzzle) { MuzzleComponent = InMuzzle; }
+    UFUNCTION(BlueprintCallable, Category = "Projectile")
+    void SetMuzzle(USceneComponent* InMuzzle) { MuzzleComponent = InMuzzle; }
 
-	UFUNCTION(BlueprintCallable, Category = "Projectile")
-	bool FireByDef(const UProjectileDef* Def, USceneComponent* HomingTarget = nullptr);
+    UFUNCTION(BlueprintCallable, Category = "Projectile")
+    bool FireByDef(const UProjectileDef* Def, USceneComponent* HomingTarget = nullptr);
 
 private:
-	// === Networking ===
-	UFUNCTION(Server, Reliable)
-	void ServerFireByDef(const UProjectileDef* Def, USceneComponent* HomingTarget = nullptr);
+    UFUNCTION(Server, Reliable)
+    void ServerFireByDef(const UProjectileDef* Def, USceneComponent* HomingTarget = nullptr);
 
-	// === Muzzle helpers ===
-	UPROPERTY() USceneComponent* MuzzleComponent = nullptr;
-	USceneComponent* ResolveMuzzle() const;
-	FTransform BuildSpawnTM() const;
-	void PlayMuzzleFX(const FTransform& SpawnTM);
+    UPROPERTY()
+    USceneComponent* MuzzleComponent = nullptr;
 
-	TSubclassOf<AProjectile> ResolveProjectileClass(const UProjectileDef* Def) const;
+    USceneComponent* ResolveMuzzle() const;
+    FTransform BuildSpawnTM() const;
+    void PlayMuzzleFX(const FTransform& SpawnTM);
+
+    USceneComponent* PickAheadHomingTarget() const;
 };
-

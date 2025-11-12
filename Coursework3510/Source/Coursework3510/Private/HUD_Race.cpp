@@ -16,8 +16,8 @@ void AHUD_Race::BeginPlay()
 			// Lower Z so menus can layer above
 			MainHUD->AddToViewport(/*ZOrder=*/10);
 			MainHUD->SetVisibility(ESlateVisibility::Visible);
-			// Optional: let clicks pass through during gameplay
-			MainHUD->SetIsEnabled(false);
+			
+			
 		}
 	}
 }

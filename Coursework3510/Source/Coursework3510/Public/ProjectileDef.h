@@ -22,7 +22,7 @@ class COURSEWORK3510_API UProjectileDef : public UPowerItemDef
 public:
     UProjectileDef() { Kind = EPowerItemKind::Projectile; }
 
-    // === Spawn class (let the asset choose which projectile to spawn) ===
+	// Projectile class
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Projectile")
     TSubclassOf<AProjectile> ProjectileClass;
 
@@ -46,4 +46,8 @@ public:
     // Sounds (optional)
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Audio") TSoftObjectPtr<USoundBase> FireSFX;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Audio") TSoftObjectPtr<USoundBase> ImpactSFX;
+
+	// Combat
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat", meta = (ClampMin = "0")) float Damage = 20.f;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat", meta = (ClampMin = "0")) int32 PointsOnHit = 100;
 };
