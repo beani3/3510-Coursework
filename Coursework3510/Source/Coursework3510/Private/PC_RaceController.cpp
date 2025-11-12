@@ -5,6 +5,7 @@
 #include "GS_RaceState.h"
 #include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
+#include "HUD_Race.h"
 
 APC_RaceController::APC_RaceController()
 {
@@ -22,6 +23,7 @@ void APC_RaceController::BeginPlay()
 		if (CountdownWidget)
 		{
 			CountdownWidget->AddToViewport();
+			CountdownWidget->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
 
@@ -60,13 +62,14 @@ void APC_RaceController::MulticastApplyPaused_Implementation(bool bPause)
 		UGameplayStatics::SetGamePaused(W, bPause);
 	}
 
-	if (bPause)
+	// Show/hide pause menu
+	if (bPause) { ShowPauseMenu(); }
+	else { HidePauseMenu(); }
+
+	// Hide HUD while menus are up
+	if (AHUD_Race* RH = GetHUD<AHUD_Race>())
 	{
-		ShowPauseMenu();
-	}
-	else
-	{
-		HidePauseMenu();
+		RH->SetHUDVisible(!bPause);
 	}
 }
 
