@@ -12,7 +12,8 @@
 				"ChaosVehicles",
 				"Engine",
 				"UMG",
-				"AIModule"
+				"AIModule",
+				"AdvancedSessions"
 			]
 		}
 	],
