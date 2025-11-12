@@ -15,7 +15,6 @@ class COURSEWORK3510_API UAC_BulletTime : public UActorComponent
 public:
 	UAC_BulletTime();
 
-	// Client-safe entry points
 	UFUNCTION(BlueprintCallable, Category = "BulletTime")
 	void StartBulletTime(float DurationSeconds);
 
@@ -25,14 +24,21 @@ public:
 	UFUNCTION(BlueprintPure, Category = "BulletTime")
 	bool IsBulletTimeActive() const { return bActive; }
 
-	// Movement along spline during bullet time
+	// Motion along spline
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BulletTime")
 	float SplineSpeed = 8000.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BulletTime")
 	bool bOrientToSpline = true;
 
-	// Visuals while in bullet time
+	// Client visual smoothing (does not change authority)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BulletTime|Smoothing")
+	bool bClientVisualSmoothing = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BulletTime|Smoothing", meta = (ClampMin = "1.0", ClampMax = "60.0"))
+	float ClientSmoothStrength = 12.f;
+
+	// Visuals
 	UPROPERTY(EditAnywhere, Category = "BulletTime|Visual")
 	TSubclassOf<AActor> BulletVisualClass;
 
@@ -50,18 +56,11 @@ protected:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 private:
-	// === Networking RPCs ===
-	UFUNCTION(Server, Reliable)
-	void ServerStartBulletTime(float DurationSeconds);
-
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastStartBulletTime(float DurationSeconds, float StartDistanceOnSpline);
-
-	UFUNCTION(Server, Reliable)
-	void ServerStopBulletTime();
-
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastStopBulletTime();
+	// RPCs
+	UFUNCTION(Server, Reliable)            void ServerStartBulletTime(float DurationSeconds);
+	UFUNCTION(NetMulticast, Reliable)      void MulticastStartBulletTime(float DurationSeconds, float StartDistanceOnSpline);
+	UFUNCTION(Server, Reliable)            void ServerStopBulletTime();
+	UFUNCTION(NetMulticast, Reliable)      void MulticastStopBulletTime();
 
 private:
 	// Track spline and motion
@@ -71,22 +70,27 @@ private:
 	float Duration = 0.f;
 	float Elapsed = 0.f;
 
-	// Helpful for UI if you want a countdown (not replicated; Multicast sets locally)
 	double EndTimeSeconds = 0.0;
 
 	float StartDistance = 0.f;
 	float CurrentDistance = 0.f;
 
-	// Input ignore state (only on locally-controlled pawn)
+	// Input ignore (local only)
 	bool bPrevIgnoreMove = false;
 	bool bPrevIgnoreLook = false;
+
+	// Client-side visual smoothing cache (does not modify authority transform)
+	FTransform SmoothedVisualTM;
 
 	FTimerHandle BulletTimerHandle;
 
 private:
 	USplineComponent* FindRaceSpline();
-	void SetInputIgnored(bool bIgnore);           // only on locally controlled pawn
-	void ZeroPhysicsVelocities() const;           // only on authority
-	void ApplyOwnerVisibility(bool bVisible);     // mesh toggle everywhere
-	void SpawnOrDestroyVisual(bool bSpawn);       // visuals everywhere
+	void SetInputIgnored(bool bIgnore);           // local only
+	void ZeroPhysicsVelocities() const;           // server only
+	void ApplyOwnerVisibility(bool bVisible);     // everywhere
+	void SpawnOrDestroyVisual(bool bSpawn);       // everywhere
+
+	// Net rate boost during bullet time (reduce jitter)
+	void BoostNetRate(bool bBoost);
 };
