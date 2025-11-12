@@ -2,7 +2,6 @@
 
 #include "AC_BulletTime.h"
 #include "Kismet/GameplayStatics.h"
-#include "DrawDebugHelpers.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/Controller.h"
 #include "Components/PrimitiveComponent.h"
@@ -31,24 +30,17 @@ USplineComponent* UAC_BulletTime::FindRaceSpline()
 	UWorld* World = GetWorld();
 	if (!World) return nullptr;
 
-	// By tag "Racetrack"
+	// 1) By tag
 	{
 		TArray<AActor*> Tagged;
 		UGameplayStatics::GetAllActorsWithTag(World, FName("Racetrack"), Tagged);
 		for (AActor* A : Tagged)
-		{
 			if (A)
-			{
 				if (USplineComponent* SC = A->FindComponentByClass<USplineComponent>())
-				{
-					UE_LOG(LogTemp, Log, TEXT("[BulletTime] Found spline via Actor Tag on '%s'."), *A->GetName());
 					return SC;
-				}
-			}
-		}
 	}
 
-	// By name "Racetrack" (actor or component)
+	// 2) By name
 	{
 		TArray<AActor*> All;
 		UGameplayStatics::GetAllActorsOfClass(World, AActor::StaticClass(), All);
@@ -57,28 +49,15 @@ USplineComponent* UAC_BulletTime::FindRaceSpline()
 			if (!A) continue;
 
 			if (A->GetName().Equals(TEXT("Racetrack"), ESearchCase::IgnoreCase))
-			{
 				if (USplineComponent* SC = A->FindComponentByClass<USplineComponent>())
-				{
-					UE_LOG(LogTemp, Log, TEXT("[BulletTime] Found spline on actor named 'Racetrack'."));
 					return SC;
-				}
-			}
 
 			for (UActorComponent* C : A->GetComponents())
-			{
 				if (auto* SC = Cast<USplineComponent>(C))
-				{
 					if (SC->GetName().Equals(TEXT("Racetrack"), ESearchCase::IgnoreCase))
-					{
-						UE_LOG(LogTemp, Log, TEXT("[BulletTime] Found component named 'Racetrack' on '%s'."), *A->GetName());
 						return SC;
-					}
-				}
-			}
 		}
 	}
-
 	return nullptr;
 }
 
@@ -114,7 +93,6 @@ void UAC_BulletTime::ZeroPhysicsVelocities() const
 		Skel->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
 		return;
 	}
-
 	if (UPrimitiveComponent* Prim = Cast<UPrimitiveComponent>(GetOwner()->GetRootComponent()))
 	{
 		if (Prim->IsSimulatingPhysics())
@@ -128,13 +106,9 @@ void UAC_BulletTime::ZeroPhysicsVelocities() const
 void UAC_BulletTime::ApplyOwnerVisibility(bool bVisible)
 {
 	if (!OwnerMesh)
-	{
 		OwnerMesh = GetOwner()->FindComponentByClass<USkeletalMeshComponent>();
-	}
 	if (OwnerMesh)
-	{
 		OwnerMesh->SetVisibility(bVisible, true);
-	}
 }
 
 void UAC_BulletTime::SpawnOrDestroyVisual(bool bSpawn)
@@ -165,47 +139,65 @@ void UAC_BulletTime::SpawnOrDestroyVisual(bool bSpawn)
 	}
 }
 
-// -------- Public API (client-safe) --------
+void UAC_BulletTime::BoostNetRate(bool bBoost)
+{
+	if (AActor* Owner = GetOwner())
+	{
+		Owner->SetReplicateMovement(true);
+
+		if (bBoost)
+		{
+			Owner->SetNetUpdateFrequency(60.f);     // was: Owner->NetUpdateFrequency = 60.f;
+			Owner->SetMinNetUpdateFrequency(30.f);  // was: Owner->MinNetUpdateFrequency = 30.f;
+			Owner->NetPriority= 3.f;             // was: Owner->NetPriority = 3.f;
+		}
+		else
+		{
+			// restore your defaults (tune to your project)
+			Owner->SetNetUpdateFrequency(20.f);
+			Owner->SetMinNetUpdateFrequency(2.f);
+			Owner->NetPriority= 1.f;
+		}
+	}
+}
+
+
+// ---------- Public API ----------
 
 void UAC_BulletTime::StartBulletTime(float DurationSeconds)
 {
 	if (DurationSeconds <= 0.f) return;
 
-	// Clients request the server to start; server calls multicast
 	if (!GetOwner() || !GetOwner()->HasAuthority())
 	{
 		ServerStartBulletTime(DurationSeconds);
 		return;
 	}
-
-	ServerStartBulletTime(DurationSeconds); // server can call directly too
+	ServerStartBulletTime(DurationSeconds);
 }
 
 void UAC_BulletTime::StopBulletTime()
 {
-	// Clients ask server to stop; server multicasts stop
 	if (!GetOwner() || !GetOwner()->HasAuthority())
 	{
 		ServerStopBulletTime();
 		return;
 	}
-
 	ServerStopBulletTime();
 }
 
-// -------- Server RPCs --------
+// ---------- Server RPCs ----------
 
 void UAC_BulletTime::ServerStartBulletTime_Implementation(float DurationSeconds)
 {
 	if (bActive) return;
 
-	// Ensure spline (server)
 	if (!RaceSpline)
 	{
 		RaceSpline = FindRaceSpline();
 		if (!RaceSpline)
 		{
-			UE_LOG(LogTemp, Error, TEXT("[BulletTime] Cannot start: 'Racetrack' spline not found (server)."));
+			UE_LOG(LogTemp, Error, TEXT("[BulletTime] No 'Racetrack' spline (server)."));
 			return;
 		}
 	}
@@ -214,17 +206,10 @@ void UAC_BulletTime::ServerStartBulletTime_Implementation(float DurationSeconds)
 	const float Key = RaceSpline->FindInputKeyClosestToWorldLocation(MyLoc);
 	const float StartDist = RaceSpline->GetDistanceAlongSplineAtSplineInputKey(Key);
 
-	// Arm server timer to stop
+	// Arm stop timer (server)
 	GetWorld()->GetTimerManager().ClearTimer(BulletTimerHandle);
-	GetWorld()->GetTimerManager().SetTimer(
-		BulletTimerHandle,
-		this,
-		&UAC_BulletTime::ServerStopBulletTime,
-		DurationSeconds,
-		false
-	);
+	GetWorld()->GetTimerManager().SetTimer(BulletTimerHandle, this, &UAC_BulletTime::ServerStopBulletTime, DurationSeconds, false);
 
-	// Multicast to all: initialize local state/visuals and (only on server) motion authority
 	MulticastStartBulletTime(DurationSeconds, StartDist);
 }
 
@@ -236,84 +221,94 @@ void UAC_BulletTime::ServerStopBulletTime_Implementation()
 	MulticastStopBulletTime();
 }
 
-// -------- Multicast RPCs --------
+// ---------- Multicast ----------
 
 void UAC_BulletTime::MulticastStartBulletTime_Implementation(float DurationSeconds, float StartDistanceOnSpline)
 {
-	// Ensure spline on each machine
 	if (!RaceSpline)
-	{
 		RaceSpline = FindRaceSpline();
-	}
 
 	Duration = DurationSeconds;
 	Elapsed = 0.f;
-	EndTimeSeconds = GetWorld() ? (GetWorld()->GetTimeSeconds() + static_cast<double>(DurationSeconds)) : 0.0;
+	EndTimeSeconds = GetWorld() ? (GetWorld()->GetTimeSeconds() + (double)DurationSeconds) : 0.0;
 
 	StartDistance = StartDistanceOnSpline;
 	CurrentDistance = StartDistanceOnSpline;
 
 	bActive = true;
 
-	// Visuals everywhere
 	OwnerMesh = GetOwner()->FindComponentByClass<USkeletalMeshComponent>();
 	ApplyOwnerVisibility(false);
 	SpawnOrDestroyVisual(true);
 
-	// Input ignore only on locally controlled pawn
 	SetInputIgnored(true);
-
-	// Enable tick on all, but only the server will move the actor
 	SetComponentTickEnabled(true);
 
-	UE_LOG(LogTemp, Log, TEXT("[BulletTime] START dur=%.2fs, speed=%.0f, startDist=%.1f"),
-		DurationSeconds, SplineSpeed, StartDistance);
+	// Cache smoothing start (client only)
+	if (!GetOwner()->HasAuthority())
+	{
+		SmoothedVisualTM = GetOwner()->GetActorTransform();
+	}
+
+	// Reduce replication jitter during BT
+	BoostNetRate(true);
 }
 
 void UAC_BulletTime::MulticastStopBulletTime_Implementation()
 {
 	bActive = false;
 
-	// Visuals everywhere
 	SpawnOrDestroyVisual(false);
 	ApplyOwnerVisibility(true);
 
-	// Input restore only on locally controlled pawn
 	SetInputIgnored(false);
-
-	// Tick off everywhere
 	SetComponentTickEnabled(false);
 
 	Duration = 0.f;
 	Elapsed = 0.f;
 	EndTimeSeconds = 0.0;
 
-	UE_LOG(LogTemp, Log, TEXT("[BulletTime] STOP"));
+	BoostNetRate(false);
 }
 
-// -------- Tick (server-authoritative motion) --------
+// ---------- Tick ----------
 
 void UAC_BulletTime::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// Only server moves the actor; position/rotation replicate to clients
-	if (!bActive || !RaceSpline || !GetOwner() || !GetOwner()->HasAuthority())
-	{
+	if (!bActive || !RaceSpline || !GetOwner())
 		return;
+
+	// Authoritative motion
+	if (GetOwner()->HasAuthority())
+	{
+		Elapsed += DeltaTime;
+		CurrentDistance += SplineSpeed * DeltaTime;
+
+		const float SplineLen = RaceSpline->GetSplineLength();
+		const float Dist = FMath::Clamp(CurrentDistance, 0.f, SplineLen);
+
+		const FVector Loc = RaceSpline->GetLocationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
+		const FRotator Rot = RaceSpline->GetRotationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
+		const FQuat    Q = bOrientToSpline ? Rot.Quaternion() : GetOwner()->GetActorQuat();
+
+		GetOwner()->SetActorLocationAndRotation(Loc, Q, false, nullptr, ETeleportType::TeleportPhysics);
+		ZeroPhysicsVelocities();
 	}
+	else if (bClientVisualSmoothing)
+	{
+		// Client: smooth the visual mesh towards replicated actor transform
+		const FTransform TargetTM = GetOwner()->GetActorTransform();
+		const float Alpha = 1.f - FMath::Exp(-ClientSmoothStrength * DeltaTime);
+		SmoothedVisualTM.Blend(SmoothedVisualTM, TargetTM, Alpha);
 
-	Elapsed += DeltaTime;
-	CurrentDistance += SplineSpeed * DeltaTime;
-
-	const float SplineLen = RaceSpline->GetSplineLength();
-	const float Dist = FMath::Clamp(CurrentDistance, 0.f, SplineLen);
-
-	const FVector Loc = RaceSpline->GetLocationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
-	const FRotator Rot = RaceSpline->GetRotationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
-	const FQuat    Q = bOrientToSpline ? Rot.Quaternion() : GetOwner()->GetActorQuat();
-
-	GetOwner()->SetActorLocationAndRotation(Loc, Q, false, nullptr, ETeleportType::TeleportPhysics);
-
-	ZeroPhysicsVelocities(); // keep physics settled on server
+		if (USkeletalMeshComponent* VisualRoot = GetOwner()->FindComponentByClass<USkeletalMeshComponent>())
+		{
+			VisualRoot->SetWorldLocationAndRotation(
+				SmoothedVisualTM.GetLocation(),
+				SmoothedVisualTM.GetRotation()
+			);
+		}
+	}
 }
