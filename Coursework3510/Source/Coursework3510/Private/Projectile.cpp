@@ -1,57 +1,84 @@
 // Projectile.cpp
+
 #include "Projectile.h"
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
-#include "Components/StaticMeshComponent.h"
 #include "Components/PrimitiveComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "AC_HealthComponent.h"
 #include "AC_PointsComponent.h"
+#include "Engine/World.h"
 
 AProjectile::AProjectile()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
+	SetActorTickEnabled(false); // enable only when needed (e.g., spline clamp / homing)
+
 	bReplicates = true;
 	SetReplicateMovement(true);
 
-	// Collision
+	Tags.Add(FName("Projectile"));
+
+	// ==== COLLISION (hit-only) ====
 	Collision = CreateDefaultSubobject<USphereComponent>(TEXT("Collision"));
 	Collision->InitSphereRadius(16.f);
-	Collision->SetCollisionProfileName(TEXT("BlockAllDynamic")); // block world for bounces
-	Collision->SetGenerateOverlapEvents(true);
+	Collision->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	Collision->SetCollisionObjectType(ProjectileChannel);
 
-	// Overlap players/vehicles so we don't physically stop them
-	Collision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-	Collision->SetCollisionResponseToChannel(ECC_Vehicle, ECR_Overlap);
-	// If you use a custom vehicle channel, also:
-	// Collision->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Overlap);
+	// Start ignore all, then explicitly enable what we want
+	Collision->SetCollisionResponseToAllChannels(ECR_Ignore);
+
+	// We want to hit world + pawns/vehicles
+	Collision->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
+	Collision->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
+	Collision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+	Collision->SetCollisionResponseToChannel(ECC_Vehicle, ECR_Block);
+
+	// Projectiles ignore each other
+	Collision->SetCollisionResponseToChannel(ProjectileChannel, ECR_Ignore);
+
+	Collision->SetGenerateOverlapEvents(false);   // we rely on OnHit only
+	Collision->SetNotifyRigidBodyCollision(true); // required for OnComponentHit
 
 	SetRootComponent(Collision);
 
-	// Mesh
+	// ==== MESH ====
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	Mesh->SetupAttachment(Collision);
 	Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	// Movement
+	// ==== MOVEMENT ====
 	Move = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("Move"));
 	Move->SetUpdatedComponent(Collision);
 	Move->ProjectileGravityScale = 0.f;
 	Move->bRotationFollowsVelocity = true;
 	Move->bInitialVelocityInLocalSpace = false;
+
+	// init pointers
+	Data = nullptr;
+	InstigatorActor = nullptr;
+	RaceSpline = nullptr;
 }
 
 void AProjectile::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Fallback if early overlaps happen before InitFromDef
 	if (!InstigatorActor)
 		InstigatorActor = GetInstigator();
 
+	// bind hit event
 	Collision->OnComponentHit.AddDynamic(this, &AProjectile::OnHit);
-	Collision->OnComponentBeginOverlap.AddDynamic(this, &AProjectile::OnBeginOverlap);
+}
 
+void AProjectile::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
 
+	if (bClampToSplineHeight)
+	{
+		ClampHeightToSpline(DeltaSeconds);
+	}
 }
 
 void AProjectile::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -94,6 +121,7 @@ void AProjectile::ApplyVisualsFromDef(const UProjectileDef* Def)
 
 	if (UStaticMesh* M = Def->Mesh.LoadSynchronous())
 		Mesh->SetStaticMesh(M);
+
 	if (UMaterialInterface* Mat = Def->MeshMaterial.LoadSynchronous())
 		Mesh->SetMaterial(0, Mat);
 }
@@ -102,6 +130,48 @@ void AProjectile::ApplyLifespanFromDef(const UProjectileDef* Def)
 {
 	if (Def && Def->LifeSeconds > 0.f)
 		SetLifeSpan(Def->LifeSeconds);
+}
+
+USplineComponent* AProjectile::FindRaceSpline() const
+{
+	UWorld* World = GetWorld();
+	if (!World) return nullptr;
+
+	// First try tag "Racetrack"
+	{
+		TArray<AActor*> Tagged;
+		UGameplayStatics::GetAllActorsWithTag(World, FName("Racetrack"), Tagged);
+		for (AActor* A : Tagged)
+		{
+			if (A)
+			{
+				if (USplineComponent* SC = A->FindComponentByClass<USplineComponent>())
+				{
+					return SC;
+				}
+			}
+		}
+	}
+
+	// Fallback: any spline on actor named "Racetrack"
+	{
+		TArray<AActor*> All;
+		UGameplayStatics::GetAllActorsOfClass(World, AActor::StaticClass(), All);
+		for (AActor* A : All)
+		{
+			if (!A) continue;
+
+			if (A->GetName().Equals(TEXT("Racetrack"), ESearchCase::IgnoreCase))
+			{
+				if (USplineComponent* SC = A->FindComponentByClass<USplineComponent>())
+				{
+					return SC;
+				}
+			}
+		}
+	}
+
+	return nullptr;
 }
 
 void AProjectile::InitFromDef(const UProjectileDef* Def, AActor* InInstigator, USceneComponent* HomingTarget)
@@ -114,68 +184,102 @@ void AProjectile::InitFromDef(const UProjectileDef* Def, AActor* InInstigator, U
 		SetInstigator(P);
 	SetOwner(InInstigator);
 
-	// Shooter immunity: movement ignore + short arming delay
+	// Shooter immunity (movement ignore + time window)
 	if (InstigatorActor)
 		Collision->IgnoreActorWhenMoving(InstigatorActor, true);
 
-	IgnoreShooterUntilTime = GetWorld() ? GetWorld()->GetTimeSeconds() + ArmingDelaySeconds : 0.0;
+	IgnoreShooterUntilTime = GetWorld()
+		? GetWorld()->GetTimeSeconds() + ArmingDelaySeconds
+		: 0.0;
 
 	ApplyVisualsFromDef(Data);
 	ApplyLifespanFromDef(Data);
 
-	// Initial velocity
-	const FVector ShootDir = GetActorQuat().GetForwardVector().GetSafeNormal();
-	Move->InitialSpeed = Data->Speed;
-	Move->MaxSpeed = Data->Speed;
-	Move->Velocity = ShootDir * Data->Speed;
-	Move->bRotationFollowsVelocity = true;
-	Move->bInitialVelocityInLocalSpace = false;
+	// === Spline clamp ===
+	RaceSpline = FindRaceSpline();
+	bClampToSplineHeight = (RaceSpline != nullptr);
+	if (bClampToSplineHeight)
+	{
+		SetActorTickEnabled(true);
+	}
 
-	// Bounce config
-	Move->bShouldBounce = (Data->Behavior == EProjBehavior::Bouncy);
-	Move->Bounciness = 0.5f;
+	// === Bounce vs Homing ===
+	const bool bIsBouncy = (Data->Behavior == EProjBehavior::Bouncy);
+	const bool bIsHoming = (Data->Behavior == EProjBehavior::Homing);
+
+	Move->bShouldBounce = bIsBouncy && !bIsHoming; // homing  no bounce
+	Move->Bounciness = bIsBouncy ? 0.5f : 0.0f;
 	Move->Friction = 0.2f;
 
-	// Homing
-	if (Data->Behavior == EProjBehavior::Homing && HomingTarget)
+	if (bIsHoming && HomingTarget)
 	{
 		Move->bIsHomingProjectile = true;
 		Move->HomingTargetComponent = HomingTarget;
-		Move->HomingAccelerationMagnitude = 8000.f;
+		Move->HomingAccelerationMagnitude = HomingAccelerationMagnitude;
+
+		// Aim directly at the target, with a slight height bias
+		FVector TargetLoc = HomingTarget->GetComponentLocation();
+		TargetLoc.Z += SplineHeightOffsetZ * 0.5f;
+
+		const FVector DirToTarget = (TargetLoc - GetActorLocation()).GetSafeNormal();
+
+		Move->InitialSpeed = Data->Speed;
+		Move->MaxSpeed = Data->Speed;
+		Move->Velocity = DirToTarget * Data->Speed;
+	}
+	else
+	{
+		Move->bIsHomingProjectile = false;
+		Move->HomingTargetComponent = nullptr;
+
+		const FVector ShootDir = GetActorQuat().GetForwardVector().GetSafeNormal();
+		Move->InitialSpeed = Data->Speed;
+		Move->MaxSpeed = Data->Speed;
+		Move->Velocity = ShootDir * Data->Speed;
 	}
 
 	// Fire SFX
 	if (!Data->FireSFX.IsNull())
-		UGameplayStatics::PlaySoundAtLocation(this, Data->FireSFX.LoadSynchronous(), GetActorLocation());
+	{
+		UGameplayStatics::PlaySoundAtLocation(
+			this,
+			Data->FireSFX.LoadSynchronous(),
+			GetActorLocation()
+		);
+	}
 }
 
-bool AProjectile::ShouldBounceOff(const AActor* Other) const
+void AProjectile::ClampHeightToSpline(float DeltaSeconds)
 {
-	if (!Other || !Data) return true;
+	if (!RaceSpline) return;
 
-	for (const FName& N : Data->NoBounceTags)
-		if (Other->ActorHasTag(N)) return false;
+	FVector Loc = GetActorLocation();
 
-	if (Data->AllowedBounceTags.Num() == 0) return true;
+	// Find nearest point on spline
+	const float Key = RaceSpline->FindInputKeyClosestToWorldLocation(Loc);
+	const FVector SplineLoc = RaceSpline->GetLocationAtSplineInputKey(Key, ESplineCoordinateSpace::World);
 
-	for (const FName& A : Data->AllowedBounceTags)
-		if (Other->ActorHasTag(A)) return true;
+	// We only force the Z to follow the spline (plus offset)
+	const float DesiredZ = SplineLoc.Z + SplineHeightOffsetZ;
 
-	return false;
+	Loc.Z = FMath::FInterpTo(Loc.Z, DesiredZ, DeltaSeconds, 10.f); // smooth adjustment
+	SetActorLocation(Loc, false, nullptr, ETeleportType::TeleportPhysics);
 }
 
 bool AProjectile::IsValidVictim(AActor* Other) const
 {
-	if (!Other || Other == InstigatorActor || Other == GetOwner()) return false;
+	if (!Other || Other == InstigatorActor || Other == GetOwner())
+		return false;
 
 	const double Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
-	if (Now < IgnoreShooterUntilTime) return false;
+	if (Now < IgnoreShooterUntilTime)
+		return false;
 
-	// Health component  valid target
+	// Health component  valid car/target
 	if (Other->FindComponentByClass<UAC_HealthComponent>())
 		return true;
 
-	// Or root object type is Pawn/Vehicle
+	// Or Pawn/Vehicle type on root component
 	if (const UPrimitiveComponent* Prim = Cast<UPrimitiveComponent>(Other->GetRootComponent()))
 	{
 		const ECollisionChannel Ch = Prim->GetCollisionObjectType();
@@ -186,94 +290,91 @@ bool AProjectile::IsValidVictim(AActor* Other) const
 	return false;
 }
 
-void AProjectile::OnBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* Other, UPrimitiveComponent* OtherComp,
-	int32 BodyIndex, bool bFromSweep, const FHitResult& Sweep)
+void AProjectile::DoImpactOnValidVictim(AActor* Victim, const FVector& Where)
 {
-	if (!HasAuthority() || !Data || !Other || Other == InstigatorActor || Other == GetOwner())
-		return;
+	if (!HasAuthority() || !Victim) return;
 
-	// Ignore self during arming period
-	const double Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
-	if (Now < IgnoreShooterUntilTime) return;
-
-	// Homing projectiles hit via overlap
-	if (Data->Behavior == EProjBehavior::Homing && IsValidVictim(Other))
+	// Damage
+	if (UAC_HealthComponent* Health = Victim->FindComponentByClass<UAC_HealthComponent>())
 	{
-		FVector ImpactPoint = GetActorLocation();
-		if (bFromSweep && Sweep.bBlockingHit)
-			ImpactPoint = Sweep.ImpactPoint;
-
-		DoImpactOnValidVictim(Other, ImpactPoint);
+		Health->ApplyDamage(ImpactDamage);
 	}
+
+	// Points to shooter
+	if (InstigatorActor)
+	{
+		if (UAC_PointsComponent* Points = InstigatorActor->FindComponentByClass<UAC_PointsComponent>())
+		{
+			Points->AddPoints(ImpactPoints);
+		}
+	}
+
+	// Impact sound
+	if (Data && !Data->ImpactSFX.IsNull())
+	{
+		UGameplayStatics::PlaySoundAtLocation(
+			this,
+			Data->ImpactSFX.LoadSynchronous(),
+			Where
+		);
+	}
+
+	Die();
 }
 
 void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* Other, UPrimitiveComponent* OtherComp,
 	FVector NormalImpulse, const FHitResult& Hit)
 {
-	if (!Data) { Die(); return; }
-	if (Other == InstigatorActor || Other == GetOwner()) return;
+	if (!Data)
+	{
+		Die();
+		return;
+	}
 
-	// If we hit another player/car, deal damage and destroy
+	// Ignore hitting our own car
+	if (Other == InstigatorActor || Other == GetOwner())
+		return;
+
+	// If it's a valid car / pawn  damage and destroy
 	if (IsValidVictim(Other))
 	{
 		DoImpactOnValidVictim(Other, Hit.ImpactPoint);
 		return;
 	}
 
-	// Handle bouncy behavior
-	if (Move->bShouldBounce && Data->Behavior == EProjBehavior::Bouncy)
+	// Otherwise: world / props handling
+	const bool bIsHoming = (Data->Behavior == EProjBehavior::Homing);
+
+	if (Move->bShouldBounce && !bIsHoming)
 	{
 		BounceCount++;
 		if (BounceCount >= Data->MaxBounces)
 		{
-			if (!Data->ImpactSFX.IsNull())
-				UGameplayStatics::PlaySoundAtLocation(this, Data->ImpactSFX.LoadSynchronous(), Hit.ImpactPoint);
+			if (Data && !Data->ImpactSFX.IsNull())
+			{
+				UGameplayStatics::PlaySoundAtLocation(
+					this,
+					Data->ImpactSFX.LoadSynchronous(),
+					Hit.ImpactPoint
+				);
+			}
 			Die();
 		}
 	}
 	else
 	{
-		// Non-bouncy projectile dies immediately
-		if (!Data->ImpactSFX.IsNull())
-			UGameplayStatics::PlaySoundAtLocation(this, Data->ImpactSFX.LoadSynchronous(), Hit.ImpactPoint);
+		// Non-bouncy (or homing) dies on first world hit
+		if (Data && !Data->ImpactSFX.IsNull())
+		{
+			UGameplayStatics::PlaySoundAtLocation(
+				this,
+				Data->ImpactSFX.LoadSynchronous(),
+				Hit.ImpactPoint
+			);
+		}
 		Die();
 	}
 }
-
-void AProjectile::DoImpactOnValidVictim(AActor* Victim, const FVector& Where)
-{
-	if (!Victim || Victim == InstigatorActor) return;
-
-	// Apply damage
-	if (UAC_HealthComponent* Health = Victim->FindComponentByClass<UAC_HealthComponent>())
-	{
-		Health->ApplyDamage(25.f);
-	}
-
-	// Give points to shooter
-	if (UAC_PointsComponent* Points = InstigatorActor ? InstigatorActor->FindComponentByClass<UAC_PointsComponent>() : nullptr)
-	{
-		Points->AddPoints(50);
-	}
-
-	// Play sound
-	if (!Data->ImpactSFX.IsNull())
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, Data->ImpactSFX.LoadSynchronous(), Where);
-	}
-
-	// Optional: Add physical impulse
-	if (UPrimitiveComponent* VictimRoot = Cast<UPrimitiveComponent>(Victim->GetRootComponent()))
-	{
-		if (VictimRoot->IsSimulatingPhysics())
-		{
-			VictimRoot->AddImpulseAtLocation(GetVelocity() * 50.f, Where);
-		}
-	}
-
-	Die();
-}
-
 
 void AProjectile::Die()
 {
