@@ -1,12 +1,12 @@
-"X:\3510-Coursework\Coursework3510\Plugins\AdvancedSessions\AdvancedSessions\Intermediate\Build\Win64\x64\UnrealEditor\Development\AdvancedSessions\Module.AdvancedSessions.1.cpp"
-/FI"X:\3510-Coursework\Coursework3510\Intermediate\Build\Win64\x64\Coursework3510Editor\Development\UnrealEd\SharedPCH.UnrealEd.Project.ValApi.Cpp20.h"
-/FI"X:\3510-Coursework\Coursework3510\Plugins\AdvancedSessions\AdvancedSessions\Intermediate\Build\Win64\x64\UnrealEditor\Development\AdvancedSessions\Definitions.AdvancedSessions.h"
-/Yu"X:\3510-Coursework\Coursework3510\Intermediate\Build\Win64\x64\Coursework3510Editor\Development\UnrealEd\SharedPCH.UnrealEd.Project.ValApi.Cpp20.h"
-/Fp"X:\3510-Coursework\Coursework3510\Intermediate\Build\Win64\x64\Coursework3510Editor\Development\UnrealEd\SharedPCH.UnrealEd.Project.ValApi.Cpp20.h.pch"
-/Fo"X:\3510-Coursework\Coursework3510\Plugins\AdvancedSessions\AdvancedSessions\Intermediate\Build\Win64\x64\UnrealEditor\Development\AdvancedSessions\Module.AdvancedSessions.1.cpp.obj"
-/experimental:log "X:\3510-Coursework\Coursework3510\Plugins\AdvancedSessions\AdvancedSessions\Intermediate\Build\Win64\x64\UnrealEditor\Development\AdvancedSessions\Module.AdvancedSessions.1.cpp.sarif"
-/sourceDependencies "X:\3510-Coursework\Coursework3510\Plugins\AdvancedSessions\AdvancedSessions\Intermediate\Build\Win64\x64\UnrealEditor\Development\AdvancedSessions\Module.AdvancedSessions.1.cpp.dep.json"
-@"X:\3510-Coursework\Coursework3510\Plugins\AdvancedSessions\AdvancedSessions\Intermediate\Build\Win64\x64\UnrealEditor\Development\AdvancedSessions\AdvancedSessions.Shared.rsp"
+"C:\Users\Halst\Documents\GitHub\3510-Coursework\Coursework3510\Plugins\AdvancedSessions\AdvancedSessions\Intermediate\Build\Win64\x64\UnrealEditor\Development\AdvancedSessions\Module.AdvancedSessions.1.cpp"
+/FI"C:\Users\Halst\Documents\GitHub\3510-Coursework\Coursework3510\Intermediate\Build\Win64\x64\Coursework3510Editor\Development\UnrealEd\SharedPCH.UnrealEd.Project.ValApi.Cpp20.h"
+/FI"C:\Users\Halst\Documents\GitHub\3510-Coursework\Coursework3510\Plugins\AdvancedSessions\AdvancedSessions\Intermediate\Build\Win64\x64\UnrealEditor\Development\AdvancedSessions\Definitions.AdvancedSessions.h"
+/Yu"C:\Users\Halst\Documents\GitHub\3510-Coursework\Coursework3510\Intermediate\Build\Win64\x64\Coursework3510Editor\Development\UnrealEd\SharedPCH.UnrealEd.Project.ValApi.Cpp20.h"
+/Fp"C:\Users\Halst\Documents\GitHub\3510-Coursework\Coursework3510\Intermediate\Build\Win64\x64\Coursework3510Editor\Development\UnrealEd\SharedPCH.UnrealEd.Project.ValApi.Cpp20.h.pch"
+/Fo"C:\Users\Halst\Documents\GitHub\3510-Coursework\Coursework3510\Plugins\AdvancedSessions\AdvancedSessions\Intermediate\Build\Win64\x64\UnrealEditor\Development\AdvancedSessions\Module.AdvancedSessions.1.cpp.obj"
+/experimental:log "C:\Users\Halst\Documents\GitHub\3510-Coursework\Coursework3510\Plugins\AdvancedSessions\AdvancedSessions\Intermediate\Build\Win64\x64\UnrealEditor\Development\AdvancedSessions\Module.AdvancedSessions.1.cpp.sarif"
+/sourceDependencies "C:\Users\Halst\Documents\GitHub\3510-Coursework\Coursework3510\Plugins\AdvancedSessions\AdvancedSessions\Intermediate\Build\Win64\x64\UnrealEditor\Development\AdvancedSessions\Module.AdvancedSessions.1.cpp.dep.json"
+@"C:\Users\Halst\Documents\GitHub\3510-Coursework\Coursework3510\Plugins\AdvancedSessions\AdvancedSessions\Intermediate\Build\Win64\x64\UnrealEditor\Development\AdvancedSessions\AdvancedSessions.Shared.rsp"
 /d2ssa-cfg-question-
 /Zc:inline
 /nologo
