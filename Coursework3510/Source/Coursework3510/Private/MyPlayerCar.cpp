@@ -27,6 +27,8 @@
 #include "Checkpoints.h"
 
 
+#include "PS_PlayerState.h"
+#include "PC_RaceController.h"
 
 #include "GM_RaceManager.h"
 #include "GS_RaceState.h"
@@ -93,6 +95,9 @@ void AMyPlayerCar::BeginPlay() {
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		};
 	};
+	CurrentLapStartWorldTime = 0.f;
+	bHasStartedLapTiming = false;
+
 }
 
 
@@ -335,24 +340,92 @@ void AMyPlayerCar::LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints,
 {
 	UE_LOG(LogTemp, Warning, TEXT("LapCheckpoint called!"));
 
-	if (CurrentCheckpoint >= _MaxCheckpoints && _bStartFinishLine == true)
+	const float Now = GetWorld()->GetTimeSeconds();
+
+	// Passing the start/finish line
+	const bool bCrossingStartFinish =
+		(CurrentCheckpoint >= _MaxCheckpoints && _bStartFinishLine);
+
+	if (bCrossingStartFinish)
 	{
+		// First time we cross: just start the timer, don’t record a lap yet
+		if (!bHasStartedLapTiming)
+		{
+			bHasStartedLapTiming = true;
+			CurrentLapStartWorldTime = Now;
+		}
+		else
+		{
+			// We completed a lap -> compute lap time (local timing)
+			const float LapTime = Now - CurrentLapStartWorldTime;
+			CurrentLapStartWorldTime = Now;
+
+			// Push it into PlayerState
+			if (AController* PC = Cast<AController>(GetController()))
+			{
+				if (APS_PlayerState* PS = PC->GetPlayerState<APS_PlayerState>())
+				{
+					PS->RegisterLapTime(LapTime);
+
+					// Sync some basic state into PlayerState too
+					PS->CurrentLap = Lap + 1; // we’re about to increment Lap
+					PS->CurrentCheckpoint = 1;
+				}
+			}
+		}
+
+		// Increment lap + reset checkpoint
 		Lap += 1;
 		CurrentCheckpoint = 1;
 	}
-
 	else if (_CheckpointNumber == CurrentCheckpoint + 1)
 	{
 		CurrentCheckpoint += 1;
 	}
-
-
 	else if (_CheckpointNumber < CurrentCheckpoint)
 	{
 		CurrentCheckpoint = _CheckpointNumber;
 	}
 
 	UE_LOG(LogTemp, Warning, TEXT("Lap: %i, Checkpoint: %i"), Lap, CurrentCheckpoint);
+
+	// === Check if race is finished for this car ===
+	// Only the server should decide this and talk to GameMode
+	if (HasAuthority())
+	{
+		AGS_RaceState* RS = GetWorld() ? GetWorld()->GetGameState<AGS_RaceState>() : nullptr;
+		if (RS && bHasStartedLapTiming)
+		{
+			const int32 TotalLaps = RS->TotalLaps; // set by GM_RaceManager
+
+			// If we've gone beyond the required number of laps, this car has finished
+			if (Lap > TotalLaps)
+			{
+				AController* PC = Cast<AController>(GetController());
+				APS_PlayerState* PS = PC ? PC->GetPlayerState<APS_PlayerState>() : nullptr;
+
+				if (PS)
+				{
+					const double NowServer = RS->GetServerWorldTimeSeconds();
+					PS->bHasFinished = true;
+					PS->FinishTimeSeconds = NowServer - RS->RaceStartServerTime;
+				}
+
+				//  NEW: show win screen immediately for this player
+				if (APC_RaceController* RacePC = Cast<APC_RaceController>(PC))
+				{
+					RacePC->ClientShowImmediateWinScreen();
+				}
+
+				// Still tell GameMode so courtesy timer starts on first finisher
+				if (AGM_RaceManager* GM = GetWorld()->GetAuthGameMode<AGM_RaceManager>())
+				{
+					GM->NotifyPlayerFinished(PS);
+				}
+			}
+
+		}
+	}
 }
 
 
@@ -467,7 +540,7 @@ void AMyPlayerCar::UsePowerup()
 {
 	if (AC_PowerupComponentC)
 	{
-		// Activate held powerup
+		
 		AC_PowerupComponentC->ActivateHeld();
 	}
 }

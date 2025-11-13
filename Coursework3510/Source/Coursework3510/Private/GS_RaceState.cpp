@@ -2,6 +2,7 @@
 
 
 #include "GS_RaceState.h"
+#include "PS_PlayerState.h"
 #include "Net/UnrealNetwork.h"
 
 AGS_RaceState::AGS_RaceState()
@@ -26,6 +27,9 @@ void AGS_RaceState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 	DOREPLIFETIME(AGS_RaceState, CountdownEndServerTime);
 	DOREPLIFETIME(AGS_RaceState, RaceStartServerTime);
 	DOREPLIFETIME(AGS_RaceState, RaceEndServerTime);
+	DOREPLIFETIME(AGS_RaceState, RaceResults);
+	DOREPLIFETIME(AGS_RaceState, FastestLapTimeSeconds);
+	DOREPLIFETIME(AGS_RaceState, FastestLapPlayerName);
 }
 
 void AGS_RaceState::OnRep_RaceFlags()
@@ -74,4 +78,54 @@ float AGS_RaceState::GetElapsedRaceSeconds() const
 	const double Now = GetServerWorldTimeSeconds();
 	const double End = bRaceFinished ? RaceEndServerTime : Now;
 	return End - RaceStartServerTime;
+}
+
+void AGS_RaceState::RebuildRaceResultsFromPlayerStates()
+{
+	RaceResults.Empty();
+	FastestLapTimeSeconds = 0.f;
+	FastestLapPlayerName = TEXT("");
+
+	TArray<APS_PlayerState*> RacePlayers;
+
+	for (APlayerState* PS : PlayerArray)
+	{
+		if (APS_PlayerState* RacePS = Cast<APS_PlayerState>(PS))
+		{
+			RacePlayers.Add(RacePS);
+		}
+	}
+
+	// Sort: finished first, then by RacePosition
+	RacePlayers.Sort([](const APS_PlayerState& A, const APS_PlayerState& B)
+		{
+			if (A.bHasFinished != B.bHasFinished)
+			{
+				return A.bHasFinished && !B.bHasFinished; // finished first
+			}
+
+			// Lower RacePosition = better (1st, 2nd, 3rd...)
+			return A.RacePosition < B.RacePosition;
+		});
+
+	for (APS_PlayerState* PS : RacePlayers)
+	{
+		FRaceResultRow Row;
+		Row.PlayerName = PS->GetPlayerName();
+		Row.RacePosition = PS->RacePosition;
+		Row.bHasFinished = PS->bHasFinished;
+		Row.FinishTimeSeconds = PS->FinishTimeSeconds;
+		Row.BestLapTimeSeconds = PS->BestLapTimeSeconds;
+
+		RaceResults.Add(Row);
+
+		// Track global fastest lap (ignore players with no laps)
+		if (PS->BestLapTimeSeconds > 0.f &&
+			(FastestLapTimeSeconds <= 0.f ||
+				PS->BestLapTimeSeconds < FastestLapTimeSeconds))
+		{
+			FastestLapTimeSeconds = PS->BestLapTimeSeconds;
+			FastestLapPlayerName = PS->GetPlayerName();
+		}
+	}
 }

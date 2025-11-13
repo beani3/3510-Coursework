@@ -16,7 +16,7 @@ class UAC_ProjectileComponent;
 class UChaosVehicleMovementComponent;
 class UArrowComponent;
 class AGM_RaceManager; // assumed GM_RaceManager
-class ABP_RaceManager; // assumed BP_RaceManager
+//class ABP_RaceManager; // assumed BP_RaceManager
 class UAC_PointsComponent;
 
 UENUM(BlueprintType)
@@ -267,6 +267,17 @@ public:
 private:
 
 protected:
+
+	UPROPERTY()
+	float CurrentLapStartWorldTime = 0.f;
+
+	// Has this racer actually started a timed lap yet?
+	UPROPERTY()
+	bool bHasStartedLapTiming = false;
+
+	// Total number of laps required to finish (we’ll fill this from RaceManager or editor)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Race")
+	int32 TotalLapsToFinish = 3; // or whatever you prefer
 
 
 };

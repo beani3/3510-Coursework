@@ -5,6 +5,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
 #include "MyPlayerCar.h"
+#include "PS_PlayerState.h"
 
 ARacePositionState::ARacePositionState()
 {
@@ -36,9 +37,9 @@ void ARacePositionState::RecomputePositions()
         {
             FRunner R;
             R.Car = Car;
-            R.Lap = Car->Lap; // replicated on car
-            R.Checkpoint = Car->CurrentCheckpoint; // replicated if you want, but we only need server-side
-            R.DistanceOnSpline = Car->DistanceOnSpline; // server owned
+            R.Lap = Car->Lap;
+            R.Checkpoint = Car->CurrentCheckpoint;
+            R.DistanceOnSpline = Car->DistanceOnSpline;
             Runners.Add(R);
         }
     }
@@ -46,7 +47,7 @@ void ARacePositionState::RecomputePositions()
     // Sort by Lap DESC, Checkpoint DESC, Distance DESC
     Runners.Sort([](const FRunner& L, const FRunner& R)
         {
-            if (L.Lap != R.Lap) return L.Lap > R.Lap;
+            if (L.Lap != R.Lap)         return L.Lap > R.Lap;
             if (L.Checkpoint != R.Checkpoint) return L.Checkpoint > R.Checkpoint;
             return L.DistanceOnSpline > R.DistanceOnSpline;
         });
@@ -56,7 +57,19 @@ void ARacePositionState::RecomputePositions()
     {
         if (AMyPlayerCar* Car = Runners[i].Car.Get())
         {
-            Car->RacePosition = i + 1; // replicated int
+            const int32 Pos = i + 1;
+
+            // Update pawn
+            Car->RacePosition = Pos;
+
+            // Also update PlayerState
+            if (AController* Controller = Cast<AController>(Car->GetController()))
+            {
+                if (APS_PlayerState* PS = Controller->GetPlayerState<APS_PlayerState>())
+                {
+                    PS->RacePosition = Pos;
+                }
+            }
         }
     }
 }

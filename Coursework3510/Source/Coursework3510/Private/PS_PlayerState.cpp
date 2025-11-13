@@ -14,4 +14,16 @@ void APS_PlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	DOREPLIFETIME(APS_PlayerState, RacePosition);
 	DOREPLIFETIME(APS_PlayerState, bHasFinished);
 	DOREPLIFETIME(APS_PlayerState, FinishTimeSeconds);
+	DOREPLIFETIME(APS_PlayerState, BestLapTimeSeconds);
+	DOREPLIFETIME(APS_PlayerState, LastLapTimeSeconds);
+}
+void APS_PlayerState::RegisterLapTime(float LapTimeSeconds)
+{
+	LastLapTimeSeconds = LapTimeSeconds;
+	LapTimesSeconds.Add(LapTimeSeconds);
+
+	if (BestLapTimeSeconds <= 0.f || LapTimeSeconds < BestLapTimeSeconds)
+	{
+		BestLapTimeSeconds = LapTimeSeconds;
+	}
 }

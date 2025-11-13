@@ -17,9 +17,11 @@ class COURSEWORK3510_API APC_RaceController : public APlayerController
 public:
 	APC_RaceController();
 
-	
 	UFUNCTION(BlueprintCallable, Category = "Race|UI")
 	void RequestSetPaused(bool bPause);
+
+	UFUNCTION(Client, Reliable)
+	void ClientShowImmediateWinScreen();
 
 protected:
 	virtual void BeginPlay() override;
@@ -29,29 +31,38 @@ protected:
 	void ServerSetPaused(bool bPause);
 
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastApplyPaused(bool bPause);
+	void MulticastApplyPaused(bool bPause);	
 
 	/* ===== UI ===== */
 
+	
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> PauseMenuWidgetClass;
 
-	
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> CountdownWidgetClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UUserWidget> WinScreenWidgetClass;
 
 private:
 	UPROPERTY() UUserWidget* PauseMenuWidget = nullptr;
 	UPROPERTY() UUserWidget* CountdownWidget = nullptr;
+	UPROPERTY() UUserWidget* WinScreenWidget = nullptr;
 
-	
 	void ShowPauseMenu();
 	void HidePauseMenu();
 
 	UFUNCTION()
 	void HandleCountdownStarted();
+
 	UFUNCTION()
 	void OnRaceStarted();
+
 	UFUNCTION()
 	void OnRaceFinished();
+
+
+
 };
+

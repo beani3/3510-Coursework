@@ -11,6 +11,31 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnRaceStateEvent);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnRaceCountdownEvent);
 
 
+USTRUCT(BlueprintType)
+struct FRaceResultRow
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly, Category = "Race")
+	FString PlayerName;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Race")
+	int32 RacePosition = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Race")
+	bool bHasFinished = false;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Race")
+	float FinishTimeSeconds = 0.f;
+
+	// Best single-lap time for this racer
+	UPROPERTY(BlueprintReadOnly, Category = "Race")
+	float BestLapTimeSeconds = 0.f;
+};
+
+
+
+
 UCLASS()
 class COURSEWORK3510_API AGS_RaceState : public AGameStateBase
 {
@@ -37,6 +62,16 @@ public:
 	UPROPERTY(Replicated, BlueprintReadOnly)
 	double RaceEndServerTime = 0.0;
 
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Race")
+	TArray<FRaceResultRow> RaceResults;
+
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Race")
+	float FastestLapTimeSeconds = 0.f;
+
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Race")
+	FString FastestLapPlayerName;
+
+
 	// use the renamed delegate type
 	UPROPERTY(BlueprintAssignable, Category = "Race|Events")
 	FOnRaceStateEvent OnRaceStarted;
@@ -61,6 +96,22 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Race|Time")
 	bool IsCountdownActive() const { return GetCountdownSecondsRemaining() > 0.f && !bRaceRunning; }
+
+	UFUNCTION(BlueprintCallable, Category = "Race")
+	void RebuildRaceResultsFromPlayerStates();
+
+	UFUNCTION(BlueprintPure, Category = "Race")
+	void GetRaceResults(
+		TArray<FRaceResultRow>& OutResults,
+		float& OutFastestLapTime,
+		FString& OutFastestLapPlayer) const
+	{
+		OutResults          = RaceResults;
+		OutFastestLapTime   = FastestLapTimeSeconds;
+		OutFastestLapPlayer = FastestLapPlayerName;
+	}
+
+
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 

@@ -32,6 +32,19 @@ public:
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Race")
 	float FinishTimeSeconds = 0.f;
 
+	// Best single-lap time for this racer (0 = none yet)
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Race")
+	float BestLapTimeSeconds = 0.f;
+
+	// Time of the most recently completed lap
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Race")
+	float LastLapTimeSeconds = 0.f;
+
+	// Optional: full history (server-only, doesn’t need replication)
+	UPROPERTY()
+	TArray<float> LapTimesSeconds;
+
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	void RegisterLapTime(float LapTimeSeconds);
 };
