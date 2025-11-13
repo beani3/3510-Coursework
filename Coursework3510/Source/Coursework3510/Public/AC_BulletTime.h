@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// AC_BulletTime.h
 
 #pragma once
 
@@ -14,6 +14,8 @@ class COURSEWORK3510_API UAC_BulletTime : public UActorComponent
 
 public:
 	UAC_BulletTime();
+
+public:
 
 	UFUNCTION(BlueprintCallable, Category = "BulletTime")
 	void StartBulletTime(float DurationSeconds);
@@ -31,12 +33,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BulletTime")
 	bool bOrientToSpline = true;
 
-	// Client visual smoothing (does not change authority)
+	// Client smoothing flag – now: “run local prediction on owning client”
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BulletTime|Smoothing")
 	bool bClientVisualSmoothing = true;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BulletTime|Smoothing", meta = (ClampMin = "1.0", ClampMax = "60.0"))
-	float ClientSmoothStrength = 12.f;
 
 	// Visuals
 	UPROPERTY(EditAnywhere, Category = "BulletTime|Visual")
@@ -64,30 +63,32 @@ private:
 
 private:
 	// Track spline and motion
-	UPROPERTY() USplineComponent* RaceSpline = nullptr;
+	UPROPERTY()
+	USplineComponent* RaceSpline = nullptr;
 
 	bool  bActive = false;
 	float Duration = 0.f;
+
+	// Server-side time along bullet path
 	float Elapsed = 0.f;
+
+	// Client-side predicted time along bullet path (owning client only)
+	float LocalElapsed = 0.f;
 
 	double EndTimeSeconds = 0.0;
 
 	float StartDistance = 0.f;
 	float CurrentDistance = 0.f;
 
-	// Input ignore (local only)
+	// Input ignore (local only – movement only)
 	bool bPrevIgnoreMove = false;
-	bool bPrevIgnoreLook = false;
-
-	// Client-side visual smoothing cache (does not modify authority transform)
-	FTransform SmoothedVisualTM;
 
 	FTimerHandle BulletTimerHandle;
 
 private:
 	USplineComponent* FindRaceSpline();
 	void SetInputIgnored(bool bIgnore);           // local only
-	void ZeroPhysicsVelocities() const;           // server only
+	void ZeroPhysicsVelocities() const;           // now a no-op
 	void ApplyOwnerVisibility(bool bVisible);     // everywhere
 	void SpawnOrDestroyVisual(bool bSpawn);       // everywhere
 

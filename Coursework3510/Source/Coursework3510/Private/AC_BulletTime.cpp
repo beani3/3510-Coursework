@@ -1,4 +1,4 @@
-//
+// AC_BulletTime.cpp
 
 #include "AC_BulletTime.h"
 #include "Kismet/GameplayStatics.h"
@@ -35,9 +35,11 @@ USplineComponent* UAC_BulletTime::FindRaceSpline()
 		TArray<AActor*> Tagged;
 		UGameplayStatics::GetAllActorsWithTag(World, FName("Racetrack"), Tagged);
 		for (AActor* A : Tagged)
-			if (A)
-				if (USplineComponent* SC = A->FindComponentByClass<USplineComponent>())
-					return SC;
+		{
+			if (!A) continue;
+			if (USplineComponent* SC = A->FindComponentByClass<USplineComponent>())
+				return SC;
+		}
 	}
 
 	// 2) By name
@@ -49,15 +51,22 @@ USplineComponent* UAC_BulletTime::FindRaceSpline()
 			if (!A) continue;
 
 			if (A->GetName().Equals(TEXT("Racetrack"), ESearchCase::IgnoreCase))
+			{
 				if (USplineComponent* SC = A->FindComponentByClass<USplineComponent>())
 					return SC;
+			}
 
 			for (UActorComponent* C : A->GetComponents())
+			{
 				if (auto* SC = Cast<USplineComponent>(C))
+				{
 					if (SC->GetName().Equals(TEXT("Racetrack"), ESearchCase::IgnoreCase))
 						return SC;
+				}
+			}
 		}
 	}
+
 	return nullptr;
 }
 
@@ -71,36 +80,20 @@ void UAC_BulletTime::SetInputIgnored(bool bIgnore)
 
 	if (bIgnore)
 	{
+		// Only block movement – keep camera look working
 		bPrevIgnoreMove = C->IsMoveInputIgnored();
-		bPrevIgnoreLook = C->IsLookInputIgnored();
 		C->SetIgnoreMoveInput(true);
-		C->SetIgnoreLookInput(true);
 	}
 	else
 	{
 		C->SetIgnoreMoveInput(bPrevIgnoreMove);
-		C->SetIgnoreLookInput(bPrevIgnoreLook);
 	}
 }
 
 void UAC_BulletTime::ZeroPhysicsVelocities() const
 {
-	if (!GetOwner() || !GetOwner()->HasAuthority()) return;
-
-	if (USkeletalMeshComponent* Skel = GetOwner()->FindComponentByClass<USkeletalMeshComponent>())
-	{
-		Skel->SetPhysicsLinearVelocity(FVector::ZeroVector);
-		Skel->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
-		return;
-	}
-	if (UPrimitiveComponent* Prim = Cast<UPrimitiveComponent>(GetOwner()->GetRootComponent()))
-	{
-		if (Prim->IsSimulatingPhysics())
-		{
-			Prim->SetPhysicsLinearVelocity(FVector::ZeroVector);
-			Prim->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
-		}
-	}
+	// NO-OP: we’re not touching physics at all now to avoid breaking vehicles
+	// (leave this here so calls compile but do nothing)
 }
 
 void UAC_BulletTime::ApplyOwnerVisibility(bool bVisible)
@@ -147,16 +140,16 @@ void UAC_BulletTime::BoostNetRate(bool bBoost)
 
 		if (bBoost)
 		{
-			Owner->SetNetUpdateFrequency(60.f);     // was: Owner->NetUpdateFrequency = 60.f;
-			Owner->SetMinNetUpdateFrequency(30.f);  // was: Owner->MinNetUpdateFrequency = 30.f;
-			Owner->NetPriority= 3.f;             // was: Owner->NetPriority = 3.f;
+			Owner->SetNetUpdateFrequency(60.f);
+			Owner->SetMinNetUpdateFrequency(30.f);
+			Owner->NetPriority = 3.f;
 		}
 		else
 		{
 			// restore your defaults (tune to your project)
 			Owner->SetNetUpdateFrequency(20.f);
 			Owner->SetMinNetUpdateFrequency(2.f);
-			Owner->NetPriority= 1.f;
+			Owner->NetPriority = 1.f;
 		}
 	}
 }
@@ -206,9 +199,15 @@ void UAC_BulletTime::ServerStartBulletTime_Implementation(float DurationSeconds)
 	const float Key = RaceSpline->FindInputKeyClosestToWorldLocation(MyLoc);
 	const float StartDist = RaceSpline->GetDistanceAlongSplineAtSplineInputKey(Key);
 
-	// Arm stop timer (server)
+	// Stop timer in case
 	GetWorld()->GetTimerManager().ClearTimer(BulletTimerHandle);
-	GetWorld()->GetTimerManager().SetTimer(BulletTimerHandle, this, &UAC_BulletTime::ServerStopBulletTime, DurationSeconds, false);
+	GetWorld()->GetTimerManager().SetTimer(
+		BulletTimerHandle,
+		this,
+		&UAC_BulletTime::ServerStopBulletTime,
+		DurationSeconds,
+		false
+	);
 
 	MulticastStartBulletTime(DurationSeconds, StartDist);
 }
@@ -230,6 +229,7 @@ void UAC_BulletTime::MulticastStartBulletTime_Implementation(float DurationSecon
 
 	Duration = DurationSeconds;
 	Elapsed = 0.f;
+	LocalElapsed = 0.f;
 	EndTimeSeconds = GetWorld() ? (GetWorld()->GetTimeSeconds() + (double)DurationSeconds) : 0.0;
 
 	StartDistance = StartDistanceOnSpline;
@@ -244,13 +244,6 @@ void UAC_BulletTime::MulticastStartBulletTime_Implementation(float DurationSecon
 	SetInputIgnored(true);
 	SetComponentTickEnabled(true);
 
-	// Cache smoothing start (client only)
-	if (!GetOwner()->HasAuthority())
-	{
-		SmoothedVisualTM = GetOwner()->GetActorTransform();
-	}
-
-	// Reduce replication jitter during BT
 	BoostNetRate(true);
 }
 
@@ -266,6 +259,7 @@ void UAC_BulletTime::MulticastStopBulletTime_Implementation()
 
 	Duration = 0.f;
 	Elapsed = 0.f;
+	LocalElapsed = 0.f;
 	EndTimeSeconds = 0.0;
 
 	BoostNetRate(false);
@@ -280,35 +274,49 @@ void UAC_BulletTime::TickComponent(float DeltaTime, ELevelTick TickType, FActorC
 	if (!bActive || !RaceSpline || !GetOwner())
 		return;
 
-	// Authoritative motion
-	if (GetOwner()->HasAuthority())
+	AActor* Owner = GetOwner();
+	const bool bIsAuthority = Owner->HasAuthority();
+
+	APawn* Pawn = Cast<APawn>(Owner);
+	const bool bIsLocallyControlled = Pawn && Pawn->IsLocallyControlled();
+
+	// ---------------------------
+	// SERVER: authoritative movement + collision
+	// ---------------------------
+	if (bIsAuthority)
 	{
 		Elapsed += DeltaTime;
-		CurrentDistance += SplineSpeed * DeltaTime;
+		CurrentDistance = StartDistance + SplineSpeed * Elapsed;
 
 		const float SplineLen = RaceSpline->GetSplineLength();
 		const float Dist = FMath::Clamp(CurrentDistance, 0.f, SplineLen);
 
-		const FVector Loc = RaceSpline->GetLocationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
+		const FVector  Loc = RaceSpline->GetLocationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
 		const FRotator Rot = RaceSpline->GetRotationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
-		const FQuat    Q = bOrientToSpline ? Rot.Quaternion() : GetOwner()->GetActorQuat();
+		const FQuat    Q = bOrientToSpline ? Rot.Quaternion() : Owner->GetActorQuat();
 
-		GetOwner()->SetActorLocationAndRotation(Loc, Q, false, nullptr, ETeleportType::TeleportPhysics);
+		Owner->SetActorLocationAndRotation(Loc, Q, false, nullptr, ETeleportType::TeleportPhysics);
+
+		// does nothing now, but kept for possible future use
 		ZeroPhysicsVelocities();
 	}
-	else if (bClientVisualSmoothing)
+	// ---------------------------
+	// OWNING CLIENT: local prediction so camera follows smoothly
+	// ---------------------------
+	else if (bClientVisualSmoothing && bIsLocallyControlled)
 	{
-		// Client: smooth the visual mesh towards replicated actor transform
-		const FTransform TargetTM = GetOwner()->GetActorTransform();
-		const float Alpha = 1.f - FMath::Exp(-ClientSmoothStrength * DeltaTime);
-		SmoothedVisualTM.Blend(SmoothedVisualTM, TargetTM, Alpha);
+		LocalElapsed += DeltaTime;
+		const float PredictedDist = StartDistance + SplineSpeed * LocalElapsed;
 
-		if (USkeletalMeshComponent* VisualRoot = GetOwner()->FindComponentByClass<USkeletalMeshComponent>())
-		{
-			VisualRoot->SetWorldLocationAndRotation(
-				SmoothedVisualTM.GetLocation(),
-				SmoothedVisualTM.GetRotation()
-			);
-		}
+		const float SplineLen = RaceSpline->GetSplineLength();
+		const float Dist = FMath::Clamp(PredictedDist, 0.f, SplineLen);
+
+		const FVector  Loc = RaceSpline->GetLocationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
+		const FRotator Rot = RaceSpline->GetRotationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
+		const FQuat    Q = bOrientToSpline ? Rot.Quaternion() : Owner->GetActorQuat();
+
+		// Move the pawn itself locally so the camera (attached) follows
+		Owner->SetActorLocationAndRotation(Loc, Q, false, nullptr, ETeleportType::TeleportPhysics);
 	}
+	// Other remote clients just see replicated movement; no local prediction needed
 }
