@@ -45,9 +45,7 @@ struct FRaceData
 	// 0..1 current lap progress
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float LapProgress01 = 0.f;
-
 };
-
 
 
 
@@ -61,7 +59,7 @@ public:
 public:
 	void BeginPlay();
 	void Tick(float DeltaSeconds) override;
-	
+
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent);
 
 	/*virtual void ApplyBuff_Implementation(const UBuffDef* Buff) override;
@@ -124,6 +122,24 @@ public:
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Race|Progress")
 	int32 RacePosition = 1; // 1 = leading
 
+	// --- Smoothed speed for UI (local, 5 Hz) ---
+	// Normalized speed value 0..1 updated at 5 Hz (every 0.2 s)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Race|Speed")
+	float SmoothedSpeed01 = 0.f;
+
+	// Expected max speed in cm/s used for normalization (e.g. 3000 cm/s)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Race|Speed")
+	float MaxSpeedForNormalization = 3000.f;
+
+	// How often we sample the speed (seconds). 0.2 = 5 Hz.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Race|Speed")
+	float SpeedSampleInterval = 0.2f;
+
+	// Internal accumulator to track time since last speed sample
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Race|Speed")
+	float TimeSinceLastSpeedSample = 0.f;
+
+
 	// --- Respawn / validity ---
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Race|Reset")
 	float MaxOffTrackMeters = 1800.f; // exceed -> suspect cut/cheat, auto-reset
@@ -175,13 +191,13 @@ public:
 	void OnHandbrakePressed();
 	void OnHandbrakeReleased();
 	void OnPauseEnter();
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
 	TSubclassOf<UUserWidget> PauseMenu;
 	UUserWidget* PauseMenuInst;
 
 	bool bInPauseMenu = false;
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
 	int32 Lap = 1;
 	int32 CurrentCheckpoint = 0;
@@ -191,15 +207,15 @@ public:
 	UPROPERTY(EditAnywhere, Category = "AI")
 	int32 CurrentSpline = 0;
 
-    UFUNCTION()
-    void OnRaceStarted();
-    UFUNCTION()
-    void OnRaceFinished();
+	UFUNCTION()
+	void OnRaceStarted();
+	UFUNCTION()
+	void OnRaceFinished();
 
 	UFUNCTION()
 	void UsePowerup();
 
-    
+
 
 
 
@@ -226,7 +242,7 @@ public:
 	AGM_RaceManager* GMRaceRef = nullptr;
 
 	// --- Reset reason tracing ---
-	
+
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Debug|Reset", meta = (AllowPrivateAccess = "true"))
 	EResetCause LastResetCause = EResetCause::None;
@@ -251,6 +267,6 @@ public:
 private:
 
 protected:
-	
+
 
 };

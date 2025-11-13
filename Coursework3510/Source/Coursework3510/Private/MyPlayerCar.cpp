@@ -34,13 +34,6 @@
 
 DEFINE_LOG_CATEGORY_STATIC(LogCarReset, Log, All);
 
-
-
-
-
-
-
-
 AMyPlayerCar::AMyPlayerCar()
 {
 	// Create components
@@ -50,7 +43,6 @@ AMyPlayerCar::AMyPlayerCar()
 	AC_Points = CreateDefaultSubobject<UAC_PointsComponent>(TEXT("PointsComponent"));
 
 	//Add Interface
-
 
 	Muzzle = CreateDefaultSubobject<UArrowComponent>(TEXT("Muzzle"));
 	Muzzle->SetupAttachment(GetRootComponent()); // AWheeledVehiclePawn already has a root
@@ -92,8 +84,6 @@ void AMyPlayerCar::BeginPlay() {
 			OnRaceFinished();
 		}
 	}
-
-
 
 	// Input mapping context 
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller)) {
@@ -156,7 +146,29 @@ void AMyPlayerCar::Tick(float DeltaSeconds)
 			ResetToCheckpoint();
 			WrongWayTimer = FlipTimer = 0.f;
 		}
+	}
 
+	// --- Smoothed normalized speed at 5 Hz for UI ---
+	if (SpeedSampleInterval > 0.f && MaxSpeedForNormalization > KINDA_SMALL_NUMBER)
+	{
+		TimeSinceLastSpeedSample += DeltaSeconds;
+
+		if (TimeSinceLastSpeedSample >= SpeedSampleInterval)
+		{
+			TimeSinceLastSpeedSample = 0.f;
+
+			const float RawSpeedCmPerSec =
+				GetVehicleMovementComponent()
+				? GetVehicleMovementComponent()->GetForwardSpeed()
+				: 0.f;
+
+			const float Normalized =
+				FMath::Clamp(FMath::Abs(RawSpeedCmPerSec) / MaxSpeedForNormalization, 0.f, 1.f);
+
+			// Optionally you can also interpolate here if you want even softer changes,
+			// but at 5 Hz this alone usually looks good and stable.
+			SmoothedSpeed01 = Normalized;
+		}
 	}
 }
 
@@ -207,19 +219,11 @@ float AMyPlayerCar::GetLapProgress01At(const FVector& WorldLoc) const
 }
 
 
-
-
-
-
-
-
-
-
+// === NEW smooth speed getter ===
 float AMyPlayerCar::GetNormalizedSpeed() const
 {
-	const float v = GetVehicleMovementComponent() ? GetVehicleMovementComponent()->GetForwardSpeed() : 0.f;
-	// normalize to ~[0..1] around 0..3000 cm/s (~108 km/h). Adjust for your HUD.
-	return FMath::Clamp(FMath::Abs(v) / 3000.f, 0.f, 1.f);
+	// Just return the cached 0..1 value that Tick updates at 5 Hz
+	return SmoothedSpeed01;
 }
 
 
@@ -235,7 +239,7 @@ void AMyPlayerCar::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		// Brake
 		EnhancedInputComponent->BindAction(BrakeAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::Brake);
 		EnhancedInputComponent->BindAction(BrakeAction, ETriggerEvent::Completed, this, &AMyPlayerCar::BrakeEnd);
-		
+
 		//// Moving
 		//EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::Move);
 		//EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &AMyPlayerCar::MoveEnd);
@@ -293,13 +297,13 @@ void AMyPlayerCar::BrakeEnd() {
 //	GetVehicleMovementComponent()->SetThrottleInput(0);
 //}
 
-void AMyPlayerCar::Steering(const FInputActionValue& Value) 
+void AMyPlayerCar::Steering(const FInputActionValue& Value)
 {
 	const float SteeringAxis = Value.Get<float>();
 	GetVehicleMovementComponent()->SetSteeringInput(SteeringAxis);
 }
 
-void AMyPlayerCar::SteeringEnd() 
+void AMyPlayerCar::SteeringEnd()
 {
 	GetVehicleMovementComponent()->SetSteeringInput(0.f);
 }
@@ -317,31 +321,31 @@ void AMyPlayerCar::OnHandbrakeReleased() {
 void AMyPlayerCar::OnPauseEnter() {
 	PauseMenuInst = CreateWidget<UUserWidget>(GetWorld(), PauseMenu);
 	APlayerController* PlayerController = Cast<APlayerController>(Controller);
-	
+
 	PauseMenuInst->AddToViewport();
 	bInPauseMenu = true;
-	
+
 	if (bInPauseMenu) {
 		PlayerController->bShowMouseCursor = true;
 		PlayerController->SetInputMode(FInputModeUIOnly());
 	}
 }
 
-void AMyPlayerCar::LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints, bool _bStartFinishLine) 
+void AMyPlayerCar::LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints, bool _bStartFinishLine)
 {
 	UE_LOG(LogTemp, Warning, TEXT("LapCheckpoint called!"));
-	
+
 	if (CurrentCheckpoint >= _MaxCheckpoints && _bStartFinishLine == true)
 	{
 		Lap += 1;
 		CurrentCheckpoint = 1;
 	}
-	
-	else if (_CheckpointNumber == CurrentCheckpoint + 1) 
+
+	else if (_CheckpointNumber == CurrentCheckpoint + 1)
 	{
 		CurrentCheckpoint += 1;
 	}
-	
+
 
 	else if (_CheckpointNumber < CurrentCheckpoint)
 	{
@@ -467,14 +471,6 @@ void AMyPlayerCar::UsePowerup()
 		AC_PowerupComponentC->ActivateHeld();
 	}
 }
-
-
-
-
-
-
-
-
 
 
 
