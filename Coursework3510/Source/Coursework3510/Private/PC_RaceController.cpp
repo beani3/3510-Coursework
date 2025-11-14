@@ -50,36 +50,107 @@ void APC_RaceController::HandleCountdownStarted()
 
 void APC_RaceController::RequestSetPaused(bool bPause)
 {
-
-	if (!HasAuthority())
+	// This is always called on the local player’s controller
+	if (HasAuthority())
 	{
-		ServerSetPaused(bPause);
-		return;
+		MulticastApplyPaused(bPause, this);
 	}
-	ServerSetPaused(bPause);
+	else
+	{
+		ServerSetPaused(bPause, this);
+	}
 }
 
-void APC_RaceController::ServerSetPaused_Implementation(bool bPause)
+
+void APC_RaceController::ServerSetPaused_Implementation(bool bPause, APlayerController* InstigatorPC)
 {
-	MulticastApplyPaused(bPause);
+	MulticastApplyPaused(bPause, InstigatorPC);
 }
 
-void APC_RaceController::MulticastApplyPaused_Implementation(bool bPause)
+void APC_RaceController::MulticastApplyPaused_Implementation(bool bPause, APlayerController* InstigatorPC)
 {
 	if (UWorld* W = GetWorld())
 	{
 		UGameplayStatics::SetGamePaused(W, bPause);
 	}
 
-	if (bPause) { ShowPauseMenu(); }
-	else { HidePauseMenu(); }
+	// Is this *the* controller that initiated the pause?
+	const bool bIsInstigator = (InstigatorPC == this);
 
-	if (AHUD_Race* RH = GetHUD<AHUD_Race>())
+
+
+	if (bPause)
 	{
-		RH->SetHUDVisible(!bPause);
+		if (bIsInstigator)
+		{
+			// Show full pause menu only for the pausing player
+			ShowPauseMenu();
+
+			if (AHUD_Race* RH = GetHUD<AHUD_Race>())
+			{
+				RH->SetHUDVisible(false);
+			}
+		}
+		else
+		{
+			// Show “waiting for <name>” overlay for everyone else
+			ShowOtherPlayerPausedWidget();
+
+			
+		}
+	}
+	else
+	{
+		// Unpause: hide everything on all clients
+		if (bIsInstigator)
+		{
+			HidePauseMenu();
+
+			if (AHUD_Race* RH = GetHUD<AHUD_Race>())
+			{
+				RH->SetHUDVisible(true);
+			}
+		}
+		else
+		{
+			HideOtherPlayerPausedWidget();
+		}
 	}
 }
 
+
+
+
+void APC_RaceController::ShowOtherPlayerPausedWidget()
+{
+	if (!OtherPlayerPauseWidget && OtherPlayerPauseWidgetClass)
+	{
+		OtherPlayerPauseWidget = CreateWidget<UUserWidget>(this, OtherPlayerPauseWidgetClass);
+	}
+
+	if (OtherPlayerPauseWidget && !OtherPlayerPauseWidget->IsInViewport())
+	{
+		OtherPlayerPauseWidget->AddToViewport(60); // above HUD, below win screen
+	}
+
+
+}
+
+void APC_RaceController::HideOtherPlayerPausedWidget()
+{
+	if (OtherPlayerPauseWidget && OtherPlayerPauseWidget->IsInViewport())
+	{
+		OtherPlayerPauseWidget->RemoveFromParent();
+	}
+}
+
+
+
+
+void APC_RaceController::ResumeGame()
+{
+	RequestSetPaused(false);
+}
 
 void APC_RaceController::ShowPauseMenu()
 {

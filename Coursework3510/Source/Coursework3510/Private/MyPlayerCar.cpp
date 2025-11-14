@@ -247,7 +247,7 @@ void AMyPlayerCar::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		EnhancedInputComponent->BindAction(HandbrakeAction, ETriggerEvent::Completed, this, &AMyPlayerCar::OnHandbrakeReleased);
 
 		// Pause Menu
-		EnhancedInputComponent->BindAction(PauseAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::OnPauseEnter);
+		EnhancedInputComponent->BindAction(PauseAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::Pause);
 
 		// Powerup
 		EnhancedInputComponent->BindAction(PowerupAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::UsePowerup);
@@ -315,16 +315,26 @@ void AMyPlayerCar::OnHandbrakeReleased() {
 	bIsBraking = false;
 }
 
-void AMyPlayerCar::OnPauseEnter() {
-	PauseMenuInst = CreateWidget<UUserWidget>(GetWorld(), PauseMenu);
-	APlayerController* PlayerController = Cast<APlayerController>(Controller);
+//void AMyPlayerCar::OnPauseEnter() {
+//	PauseMenuInst = CreateWidget<UUserWidget>(GetWorld(), PauseMenu);
+//	APlayerController* PlayerController = Cast<APlayerController>(Controller);
+//
+//	PauseMenuInst->AddToViewport();
+//	bInPauseMenu = true;
+//
+//	if (bInPauseMenu) {
+//		PlayerController->bShowMouseCursor = true;
+//		PlayerController->SetInputMode(FInputModeUIOnly());
+//	}
+//}
 
-	PauseMenuInst->AddToViewport();
-	bInPauseMenu = true;
 
-	if (bInPauseMenu) {
-		PlayerController->bShowMouseCursor = true;
-		PlayerController->SetInputMode(FInputModeUIOnly());
+void AMyPlayerCar::Pause()
+{
+	if (APC_RaceController* RC = Cast<APC_RaceController>(GetController()))
+	{
+		const bool bPaused = UGameplayStatics::IsGamePaused(GetWorld());
+		RC->RequestSetPaused(!bPaused);
 	}
 }
 
