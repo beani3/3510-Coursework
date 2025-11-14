@@ -75,6 +75,13 @@ protected:
 
 	USplineComponent* FindRaceSpline() const;
 
+	USceneComponent* PendingHomingTarget = nullptr;
+	bool bHomingActive = false;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Projectile|Tuning")
+	float HomingActivationDistance = 1200.f;
+
+
 private:
 	// Ignore shooter for a short time after spawn
 	double IgnoreShooterUntilTime = 0.0;
@@ -91,13 +98,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Projectile|Tuning")
 	float SplineHeightOffsetZ = 50.f;
 
-	// impact daamage
-	UPROPERTY(EditDefaultsOnly, Category = "Projectile|Tuning")
-	float ImpactDamage = 25.f;
-
-	// impact points
-	UPROPERTY(EditDefaultsOnly, Category = "Projectile|Tuning")
-	int32 ImpactPoints = 50;
+	
 	// current bounce count
 	int32 BounceCount = 0;
 

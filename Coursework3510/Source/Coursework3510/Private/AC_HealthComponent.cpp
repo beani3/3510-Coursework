@@ -3,14 +3,13 @@
 
 #include "AC_HealthComponent.h"
 #include "GameFramework/Actor.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values for this component's properties
 UAC_HealthComponent::UAC_HealthComponent()
 {
-	
 	PrimaryComponentTick.bCanEverTick = true;
-
-
+	SetIsReplicatedByDefault(true);
 }
 
 // Called when the game starts
@@ -113,6 +112,26 @@ void UAC_HealthComponent::ApplyConfig(const FHealthComponentConfig& InCfg, bool 
 	if (bResetHealth)
 	{
 		InitializeHealth(); // sets Health=MaxHealth, clears dead, broadcasts
+	}
+}
+
+void UAC_HealthComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(UAC_HealthComponent, Health);
+}
+
+void UAC_HealthComponent::OnRep_Health(float OldHealth)
+{
+	const float HealthChange = Health - OldHealth;
+	OnHealthChanged.Broadcast(Health, HealthChange);
+	if (HealthChange < 0.f)
+	{
+		OnDamaged.Broadcast(-HealthChange);
+	}
+	else if (HealthChange > 0.f)
+	{
+		OnHealed.Broadcast(HealthChange);
 	}
 }
 

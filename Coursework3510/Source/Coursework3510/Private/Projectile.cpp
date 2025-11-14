@@ -7,12 +7,13 @@
 #include "Components/StaticMeshComponent.h"
 #include "AC_HealthComponent.h"
 #include "AC_PointsComponent.h"
+#include "BPI_ScoreReceiver.h"
 #include "Engine/World.h"
 
 AProjectile::AProjectile()
 {
 	PrimaryActorTick.bCanEverTick = true;
-	SetActorTickEnabled(false); // enable only when needed (e.g., spline clamp / homing)
+	SetActorTickEnabled(false); // enable only when needed (e.g. spline clamp / homing)
 
 	bReplicates = true;
 	SetReplicateMovement(true);
@@ -21,7 +22,7 @@ AProjectile::AProjectile()
 
 	// ==== COLLISION (hit-only) ====
 	Collision = CreateDefaultSubobject<USphereComponent>(TEXT("Collision"));
-	Collision->InitSphereRadius(16.f);
+	Collision->InitSphereRadius(5.f);
 	Collision->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	Collision->SetCollisionObjectType(ProjectileChannel);
 
@@ -79,6 +80,19 @@ void AProjectile::Tick(float DeltaSeconds)
 	{
 		ClampHeightToSpline(DeltaSeconds);
 	}
+
+	if (!bHomingActive && PendingHomingTarget)
+	{
+		const float Dist = FVector::Dist(GetActorLocation(), PendingHomingTarget->GetComponentLocation());
+
+		if (Dist < HomingActivationDistance)
+		{
+			bHomingActive = true;
+			Move->bIsHomingProjectile = true;
+			Move->HomingTargetComponent = PendingHomingTarget;
+			Move->HomingAccelerationMagnitude = HomingAccelerationMagnitude;
+		}
+	}
 }
 
 void AProjectile::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -91,15 +105,11 @@ void AProjectile::SetDefPathFromDef(const UProjectileDef* Def)
 {
 	if (!HasAuthority() || !Def) return;
 
-	const FSoftObjectPath PathFromObj(Def);
-	if (PathFromObj.IsValid() && !PathFromObj.ToString().StartsWith(TEXT("/Engine/Transient")))
-	{
-		DefPath = PathFromObj;
-	}
-	else
-	{
-		DefPath.Reset();
-	}
+	if (!Def->IsAsset())
+		return;
+
+	DefPath = FSoftObjectPath(Def);
+	ForceNetUpdate();
 }
 
 void AProjectile::OnRep_DefPath()
@@ -213,19 +223,17 @@ void AProjectile::InitFromDef(const UProjectileDef* Def, AActor* InInstigator, U
 
 	if (bIsHoming && HomingTarget)
 	{
-		Move->bIsHomingProjectile = true;
-		Move->HomingTargetComponent = HomingTarget;
-		Move->HomingAccelerationMagnitude = HomingAccelerationMagnitude;
+		PendingHomingTarget = HomingTarget;
+		bHomingActive = false;
 
-		// Aim directly at the target, with a slight height bias
-		FVector TargetLoc = HomingTarget->GetComponentLocation();
-		TargetLoc.Z += SplineHeightOffsetZ * 0.5f;
+		Move->bIsHomingProjectile = false;
+		Move->HomingTargetComponent = nullptr;
 
-		const FVector DirToTarget = (TargetLoc - GetActorLocation()).GetSafeNormal();
+		SetActorTickEnabled(true);
 
 		Move->InitialSpeed = Data->Speed;
 		Move->MaxSpeed = Data->Speed;
-		Move->Velocity = DirToTarget * Data->Speed;
+		Move->Velocity = GetActorForwardVector() * Data->Speed;
 	}
 	else
 	{
@@ -255,13 +263,12 @@ void AProjectile::ClampHeightToSpline(float DeltaSeconds)
 
 	FVector Loc = GetActorLocation();
 
-
 	const float Key = RaceSpline->FindInputKeyClosestToWorldLocation(Loc);
 	const FVector SplineLoc = RaceSpline->GetLocationAtSplineInputKey(Key, ESplineCoordinateSpace::World);
 
 	const float DesiredZ = SplineLoc.Z + SplineHeightOffsetZ;
 
-	Loc.Z = FMath::FInterpTo(Loc.Z, DesiredZ, DeltaSeconds, 10.f); 
+	Loc.Z = FMath::FInterpTo(Loc.Z, DesiredZ, DeltaSeconds, 10.f);
 	SetActorLocation(Loc, false, nullptr, ETeleportType::TeleportPhysics);
 }
 
@@ -270,11 +277,10 @@ bool AProjectile::IsValidVictim(AActor* Other) const
 	if (!Other || Other == InstigatorActor || Other == GetOwner())
 		return false;
 
-	const double Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
-	if (Now < IgnoreShooterUntilTime)
-		return false;
-
 	if (Other->FindComponentByClass<UAC_HealthComponent>())
+		return true;
+
+	if (Other->GetClass()->ImplementsInterface(UBPI_ScoreReceiver::StaticClass()))
 		return true;
 
 	if (const UPrimitiveComponent* Prim = Cast<UPrimitiveComponent>(Other->GetRootComponent()))
@@ -289,22 +295,22 @@ bool AProjectile::IsValidVictim(AActor* Other) const
 
 void AProjectile::DoImpactOnValidVictim(AActor* Victim, const FVector& Where)
 {
-	if (!HasAuthority() || !Victim) return;
+	if (!HasAuthority() || !Victim || !Data) return;
 
 	if (UAC_HealthComponent* Health = Victim->FindComponentByClass<UAC_HealthComponent>())
 	{
-		Health->ApplyDamage(ImpactDamage);
+		Health->ApplyDamage(Data->Damage);
 	}
 
 	if (InstigatorActor)
 	{
 		if (UAC_PointsComponent* Points = InstigatorActor->FindComponentByClass<UAC_PointsComponent>())
 		{
-			Points->AddPoints(ImpactPoints);
+			Points->AddPoints(Data->PointsOnHit);
 		}
 	}
 
-	if (Data && !Data->ImpactSFX.IsNull())
+	if (!Data->ImpactSFX.IsNull())
 	{
 		UGameplayStatics::PlaySoundAtLocation(
 			this,
@@ -315,6 +321,7 @@ void AProjectile::DoImpactOnValidVictim(AActor* Victim, const FVector& Where)
 
 	Die();
 }
+
 
 void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* Other, UPrimitiveComponent* OtherComp,
 	FVector NormalImpulse, const FHitResult& Hit)

@@ -45,8 +45,11 @@ protected:
 	float MaxHealth = 100.f;
 
 	//Current health value
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health", ReplicatedUsing = OnRep_Health)
 	float Health = 100.f;
+
+	UFUNCTION()
+	void OnRep_Health(float OldHealth);
 
 
 	// Can Die?
