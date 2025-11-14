@@ -224,7 +224,7 @@ void UAC_BulletTime::ServerStopBulletTime_Implementation() // server authoritati
 
 // 
 
-void UAC_BulletTime::MulticastStartBulletTime_Implementation(float DurationSeconds, float StartDistanceOnSpline) // multicast start 
+void UAC_BulletTime::MulticastStartBulletTime_Implementation(float DurationSeconds, float StartDistanceOnSpline)
 {
 	if (!RaceSpline)
 		RaceSpline = FindRaceSpline();
@@ -246,12 +246,38 @@ void UAC_BulletTime::MulticastStartBulletTime_Implementation(float DurationSecon
 	SetInputIgnored(true);
 	SetComponentTickEnabled(true);
 
+	//  capture current forward speed so we can restore it later
+	SavedForwardSpeed = 0.f;
+	if (AActor* Owner = GetOwner())
+	{
+		if (UPrimitiveComponent* Prim = Cast<UPrimitiveComponent>(Owner->GetRootComponent()))
+		{
+			// Use component velocity (works with physics / vehicle components)
+			const FVector Vel = Prim->GetComponentVelocity();
+			const FVector Forward = Owner->GetActorForwardVector();
+			SavedForwardSpeed = FVector::DotProduct(Vel, Forward);
+		}
+	}
+
 	BoostNetRate(true);
 }
+
 
 void UAC_BulletTime::MulticastStopBulletTime_Implementation() // multicast stop
 {
 	bActive = false;
+
+	if (AActor* Owner = GetOwner())
+	{
+		if (UPrimitiveComponent* Prim = Cast<UPrimitiveComponent>(Owner->GetRootComponent()))
+		{
+			const FVector Forward = Owner->GetActorForwardVector();
+
+			// Kill any weird sideways / spin velocities
+			Prim->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+			Prim->SetPhysicsLinearVelocity(Forward * SavedForwardSpeed);
+		}
+	}
 
 	SpawnOrDestroyVisual(false);
 	ApplyOwnerVisibility(true);
@@ -280,39 +306,67 @@ void UAC_BulletTime::TickComponent(float DeltaTime, ELevelTick TickType, FActorC
 	APawn* Pawn = Cast<APawn>(Owner);
 	const bool bIsLocallyControlled = Pawn && Pawn->IsLocallyControlled();
 
+	const float SplineLen = RaceSpline->GetSplineLength();
+	if (SplineLen <= 0.f)
+		return;
 
+	// ---------------------------
+	// SERVER: authoritative movement + collision
+	// ---------------------------
 	if (bIsAuthority)
 	{
 		Elapsed += DeltaTime;
 		CurrentDistance = StartDistance + SplineSpeed * Elapsed;
 
-		const float SplineLen = RaceSpline->GetSplineLength();
-		const float Dist = FMath::Clamp(CurrentDistance, 0.f, SplineLen);
+		// LOOP around the spline instead of clamping
+		float Dist = FMath::Fmod(CurrentDistance, SplineLen);
+		if (Dist < 0.f)
+		{
+			Dist += SplineLen;
+		}
 
-		const FVector  Loc = RaceSpline->GetLocationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
-		const FRotator Rot = RaceSpline->GetRotationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
-		const FQuat    Q = bOrientToSpline ? Rot.Quaternion() : Owner->GetActorQuat();
+		const FVector Loc = RaceSpline->GetLocationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
+
+		// Use direction along spline, but YAW only (keep car flat)
+		FVector TangentDir = RaceSpline->GetDirectionAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
+		FRotator YawRot = TangentDir.Rotation();
+		YawRot.Pitch = 0.f;
+		YawRot.Roll = 0.f;
+
+		const FQuat Q = bOrientToSpline ? YawRot.Quaternion() : Owner->GetActorQuat();
 
 		Owner->SetActorLocationAndRotation(Loc, Q, false, nullptr, ETeleportType::TeleportPhysics);
 
-		
-		ZeroPhysicsVelocities();
+		ZeroPhysicsVelocities(); // currently a no-op, but kept for future
 	}
 	
+
+
 	else if (bClientVisualSmoothing && bIsLocallyControlled)
 	{
 		LocalElapsed += DeltaTime;
-		const float PredictedDist = StartDistance + SplineSpeed * LocalElapsed;
+		const float PredictedDistRaw = StartDistance + SplineSpeed * LocalElapsed;
 
-		const float SplineLen = RaceSpline->GetSplineLength();
-		const float Dist = FMath::Clamp(PredictedDist, 0.f, SplineLen);
+		
+		float Dist = FMath::Fmod(PredictedDistRaw, SplineLen);
+		if (Dist < 0.f)
+		{
+			Dist += SplineLen;
+		}
 
-		const FVector  Loc = RaceSpline->GetLocationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
-		const FRotator Rot = RaceSpline->GetRotationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
-		const FQuat    Q = bOrientToSpline ? Rot.Quaternion() : Owner->GetActorQuat();
+		const FVector Loc = RaceSpline->GetLocationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
+
+		
+		FVector TangentDir = RaceSpline->GetDirectionAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
+		FRotator YawRot = TangentDir.Rotation();
+		YawRot.Pitch = 0.f;
+		YawRot.Roll = 0.f;
+
+		const FQuat Q = bOrientToSpline ? YawRot.Quaternion() : Owner->GetActorQuat();
 
 		
 		Owner->SetActorLocationAndRotation(Loc, Q, false, nullptr, ETeleportType::TeleportPhysics);
 	}
 	
 }
+
