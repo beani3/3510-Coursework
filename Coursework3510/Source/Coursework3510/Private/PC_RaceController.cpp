@@ -1,6 +1,5 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "PC_RaceController.h"
 #include "GS_RaceState.h"
 #include "Blueprint/UserWidget.h"
@@ -47,43 +46,58 @@ void APC_RaceController::HandleCountdownStarted()
 	}
 }
 
-
+// Called from pawn or UI
 void APC_RaceController::RequestSetPaused(bool bPause)
 {
-	// This is always called on the local player’s controller
+	// Always route through server so it can notify everyone
 	if (HasAuthority())
 	{
-		MulticastApplyPaused(bPause, this);
+		ServerSetPaused_Implementation(bPause);
 	}
 	else
 	{
-		ServerSetPaused(bPause, this);
+		ServerSetPaused(bPause);
 	}
 }
 
-
-void APC_RaceController::ServerSetPaused_Implementation(bool bPause, APlayerController* InstigatorPC)
+void APC_RaceController::ServerSetPaused_Implementation(bool bPause)
 {
-	MulticastApplyPaused(bPause, InstigatorPC);
+	UWorld* W = GetWorld();
+	if (!W) return;
+
+	// Pause/unpause the game world on the server
+	UGameplayStatics::SetGamePaused(W, bPause);
+
+	// This controller is the one that initiated the pause
+	APlayerController* InstigatorPC = this;
+
+	// Tell each player controller what to show
+	for (FConstPlayerControllerIterator It = W->GetPlayerControllerIterator(); It; ++It)
+	{
+		if (APC_RaceController* RC = Cast<APC_RaceController>(*It))
+		{
+			const bool bIsInstigator = (RC == InstigatorPC);
+			RC->ClientApplyPaused(bPause, bIsInstigator);
+		}
+	}
 }
 
-void APC_RaceController::MulticastApplyPaused_Implementation(bool bPause, APlayerController* InstigatorPC)
+void APC_RaceController::ClientApplyPaused_Implementation(bool bPause, bool bIsInstigator)
 {
+	// Make sure this local world is actually paused/unpaused
 	if (UWorld* W = GetWorld())
 	{
 		UGameplayStatics::SetGamePaused(W, bPause);
 	}
 
-	// Is this *the* controller that initiated the pause?
-	const bool bIsInstigator = (InstigatorPC == this);
-
-
-
 	if (bPause)
 	{
+		// Everyone gets the overlay
+		ShowPausedOverlay();
+
 		if (bIsInstigator)
 		{
-			// Show full pause menu only for the pausing player
+			// Only the pausing player gets the full pause menu
 			ShowPauseMenu();
 
 			if (AHUD_Race* RH = GetHUD<AHUD_Race>())
@@ -91,17 +105,12 @@ void APC_RaceController::MulticastApplyPaused_Implementation(bool bPause, APlaye
 				RH->SetHUDVisible(false);
 			}
 		}
-		else
-		{
-			// Show “waiting for <name>” overlay for everyone else
-			ShowOtherPlayerPausedWidget();
-
-			
-		}
 	}
 	else
 	{
-		// Unpause: hide everything on all clients
+		// Everyone loses the overlay
+		HidePausedOverlay();
+
 		if (bIsInstigator)
 		{
 			HidePauseMenu();
@@ -111,46 +120,39 @@ void APC_RaceController::MulticastApplyPaused_Implementation(bool bPause, APlaye
 				RH->SetHUDVisible(true);
 			}
 		}
-		else
-		{
-			HideOtherPlayerPausedWidget();
-		}
 	}
 }
-
-
-
-
-void APC_RaceController::ShowOtherPlayerPausedWidget()
-{
-	if (!OtherPlayerPauseWidget && OtherPlayerPauseWidgetClass)
-	{
-		OtherPlayerPauseWidget = CreateWidget<UUserWidget>(this, OtherPlayerPauseWidgetClass);
-	}
-
-	if (OtherPlayerPauseWidget && !OtherPlayerPauseWidget->IsInViewport())
-	{
-		OtherPlayerPauseWidget->AddToViewport(60); // above HUD, below win screen
-	}
-
-
-}
-
-void APC_RaceController::HideOtherPlayerPausedWidget()
-{
-	if (OtherPlayerPauseWidget && OtherPlayerPauseWidget->IsInViewport())
-	{
-		OtherPlayerPauseWidget->RemoveFromParent();
-	}
-}
-
-
-
 
 void APC_RaceController::ResumeGame()
 {
 	RequestSetPaused(false);
 }
+
+// ---------- Overlay for all players ----------
+
+void APC_RaceController::ShowPausedOverlay()
+{
+	if (!PausedOverlayWidget && PausedOverlayWidgetClass)
+	{
+		PausedOverlayWidget = CreateWidget<UUserWidget>(this, PausedOverlayWidgetClass);
+	}
+
+	if (PausedOverlayWidget && !PausedOverlayWidget->IsInViewport())
+	{
+		// Overlay layer, under menus and win screen if you like
+		PausedOverlayWidget->AddToViewport(45);
+	}
+}
+
+void APC_RaceController::HidePausedOverlay()
+{
+	if (PausedOverlayWidget && PausedOverlayWidget->IsInViewport())
+	{
+		PausedOverlayWidget->RemoveFromParent();
+	}
+}
+
+// ---------- Pause menu for instigator ----------
 
 void APC_RaceController::ShowPauseMenu()
 {
@@ -159,10 +161,10 @@ void APC_RaceController::ShowPauseMenu()
 		PauseMenuWidget = CreateWidget<UUserWidget>(this, PauseMenuWidgetClass);
 	}
 
-	
 	if (PauseMenuWidget && !PauseMenuWidget->IsInViewport())
 	{
-		PauseMenuWidget->AddToViewport(50); 
+		// Menu on top of the overlay
+		PauseMenuWidget->AddToViewport(50);
 	}
 
 	bShowMouseCursor = true;
@@ -186,6 +188,7 @@ void APC_RaceController::HidePauseMenu()
 	SetInputMode(Mode);
 }
 
+// ---------- Race events ----------
 
 void APC_RaceController::OnRaceStarted()
 {
@@ -197,7 +200,6 @@ void APC_RaceController::OnRaceStarted()
 
 void APC_RaceController::OnRaceFinished()
 {
-	
 	if (WinScreenWidgetClass)
 	{
 		WinScreenWidget = CreateWidget<UUserWidget>(this, WinScreenWidgetClass);
@@ -215,7 +217,6 @@ void APC_RaceController::OnRaceFinished()
 
 void APC_RaceController::ClientShowImmediateWinScreen_Implementation()
 {
-	
 	if (WinScreenWidgetClass)
 	{
 		if (!WinScreenWidget)
@@ -228,6 +229,4 @@ void APC_RaceController::ClientShowImmediateWinScreen_Implementation()
 			WinScreenWidget->AddToViewport(100);
 		}
 	}
-
-
 }

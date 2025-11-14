@@ -17,7 +17,7 @@ class COURSEWORK3510_API APC_RaceController : public APlayerController
 public:
 	APC_RaceController();
 
-	// Request to set paused state
+	// Called by pawn or UI to request pause/unpause
 	UFUNCTION(BlueprintCallable, Category = "Race|UI")
 	void RequestSetPaused(bool bPause);
 
@@ -25,37 +25,33 @@ public:
 	UFUNCTION(Client, Reliable)
 	void ClientShowImmediateWinScreen();
 
-
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "Race|UI")
 	void ResumeGame();
-
 
 protected:
 	virtual void BeginPlay() override;
 
-
-
-	// Handle paused state change
+	// Server: apply pause state and notify all players
 	UFUNCTION(Server, Reliable)
-	void ServerSetPaused(bool bPause, APlayerController* InstigatorPC);
+	void ServerSetPaused(bool bPause);
 
-	// Multicast paused state change
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastApplyPaused(bool bPause, APlayerController* InstigatorPC);
+	// Client: apply pause visuals for this player
+	UFUNCTION(Client, Reliable)
+	void ClientApplyPaused(bool bPause, bool bIsInstigator);
 
-	//pause menu widget
+	// Main pause menu for the pausing player
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> PauseMenuWidgetClass;
 
-	//pause menu for other players
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
-	TSubclassOf<UUserWidget> OtherPlayerPauseWidgetClass;
+	// Overlay that *everyone* sees when the game is paused
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UUserWidget> PausedOverlayWidgetClass;
 
-	//countdown widget
+	// Countdown widget
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> CountdownWidgetClass;
-	
-	// win screen widget
+
+	// Win screen widget
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> WinScreenWidgetClass;
 
@@ -63,30 +59,25 @@ private:
 	UPROPERTY() UUserWidget* PauseMenuWidget = nullptr;
 	UPROPERTY() UUserWidget* CountdownWidget = nullptr;
 	UPROPERTY() UUserWidget* WinScreenWidget = nullptr;
-	UPROPERTY() UUserWidget* OtherPlayerPauseWidget = nullptr;
+	UPROPERTY() UUserWidget* PausedOverlayWidget = nullptr;
 
-	//show/hide pause menu
+	// Pause menu for instigator
 	void ShowPauseMenu();
 	void HidePauseMenu();
-	
-	//show/hide other player paused widget
-	void ShowOtherPlayerPausedWidget();
-	void HideOtherPlayerPausedWidget();
 
+	// Overlay for everyone
+	void ShowPausedOverlay();
+	void HidePausedOverlay();
 
-	//countdown started
+	// Countdown started
 	UFUNCTION()
 	void HandleCountdownStarted();
-	 
-	//race started
+
+	// Race started
 	UFUNCTION()
 	void OnRaceStarted();
 
-	//	race finished
+	// Race finished
 	UFUNCTION()
 	void OnRaceFinished();
-
-
-
 };
-
