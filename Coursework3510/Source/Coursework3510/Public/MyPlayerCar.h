@@ -190,13 +190,14 @@ public:
 	void SteeringEnd();
 	void OnHandbrakePressed();
 	void OnHandbrakeReleased();
-	void OnPauseEnter();
+	//void OnPauseEnter();
+	void Pause();
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
+	/*UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
 	TSubclassOf<UUserWidget> PauseMenu;
-	UUserWidget* PauseMenuInst;
+	UUserWidget* PauseMenuInst;*/
 
-	bool bInPauseMenu = false;
+	/*bool bInPauseMenu = false;*/
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
 	int32 Lap = 1;

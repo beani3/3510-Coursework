@@ -25,20 +25,31 @@ public:
 	UFUNCTION(Client, Reliable)
 	void ClientShowImmediateWinScreen();
 
+
+	UFUNCTION(BlueprintCallable)
+	void ResumeGame();
+
+
 protected:
 	virtual void BeginPlay() override;
 
+
+
 	// Handle paused state change
 	UFUNCTION(Server, Reliable)
-	void ServerSetPaused(bool bPause);
+	void ServerSetPaused(bool bPause, APlayerController* InstigatorPC);
 
-	// Apply paused state on all clients
+	// Multicast paused state change
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastApplyPaused(bool bPause);	
+	void MulticastApplyPaused(bool bPause, APlayerController* InstigatorPC);
 
 	//pause menu widget
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> PauseMenuWidgetClass;
+
+	//pause menu for other players
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
+	TSubclassOf<UUserWidget> OtherPlayerPauseWidgetClass;
 
 	//countdown widget
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
@@ -52,10 +63,16 @@ private:
 	UPROPERTY() UUserWidget* PauseMenuWidget = nullptr;
 	UPROPERTY() UUserWidget* CountdownWidget = nullptr;
 	UPROPERTY() UUserWidget* WinScreenWidget = nullptr;
+	UPROPERTY() UUserWidget* OtherPlayerPauseWidget = nullptr;
 
 	//show/hide pause menu
 	void ShowPauseMenu();
 	void HidePauseMenu();
+	
+	//show/hide other player paused widget
+	void ShowOtherPlayerPausedWidget();
+	void HideOtherPlayerPausedWidget();
+
 
 	//countdown started
 	UFUNCTION()
