@@ -46,6 +46,11 @@
 			"Name": "NarrativePro",
 			"Enabled": false,
 			"MarketplaceURL": "com.epicgames.launcher://ue/Fab/product/86f8c09a-957c-451a-a4d1-fb1b4a6bbc46"
+		},
+		{
+			"Name": "ProjectCleaner",
+			"Enabled": false,
+			"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/4d7f5dc837fc4b009bb91e678adf9fd0"
 		}
 	]
 }
