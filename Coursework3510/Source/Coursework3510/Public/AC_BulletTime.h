@@ -18,7 +18,7 @@ public:
 public:
 
 	UFUNCTION(BlueprintCallable, Category = "BulletTime")
-	void StartBulletTime(float DurationSeconds);
+	void StartBulletTime(float DurationSeconds); 
 
 	UFUNCTION(BlueprintCallable, Category = "BulletTime")
 	void StopBulletTime();

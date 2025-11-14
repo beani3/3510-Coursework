@@ -254,7 +254,6 @@ void AObstaclesBase::OnDied_FromHealth()
 	OnDied.Broadcast();
 }
 
-/** --------- Scoring helper --------- */
 void AObstaclesBase::AwardPoints(AActor* Receiver, int32 Amount, FName Reason, AActor* Causer)
 {
 	if (!Receiver || Amount == 0) return;

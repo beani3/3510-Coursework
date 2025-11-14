@@ -3,6 +3,9 @@
 #include "PS_PlayerState.h"
 #include "TimerManager.h"
 
+// the game mode manages the race works with the game and player states to control
+
+
 void AGM_RaceManager::StartRaceWithCountdown(float Seconds)
 {
 	if (!HasAuthority()) return;
@@ -11,7 +14,7 @@ void AGM_RaceManager::StartRaceWithCountdown(float Seconds)
 	{
 		const double Now = RS->GetServerWorldTimeSeconds();
 
-		// Reset internal state
+		
 		bCourtesyStarted = false;
 
 		RS->TotalLaps = Config_TotalLaps;
@@ -21,11 +24,11 @@ void AGM_RaceManager::StartRaceWithCountdown(float Seconds)
 		RS->RaceStartServerTime = 0.0;
 		RS->RaceEndServerTime = 0.0;
 
-		// Server local notify; clients see it via OnRep_Countdown
+		
 		RS->NotifyCountdownStarted();
 		RS->OnRep_Countdown();
 
-		// Timer to actually start the race when countdown ends
+		
 		GetWorldTimerManager().ClearTimer(TH_CountdownDone);
 		GetWorldTimerManager().SetTimer(
 			TH_CountdownDone,
@@ -35,7 +38,7 @@ void AGM_RaceManager::StartRaceWithCountdown(float Seconds)
 			false
 		);
 
-		// Clear any old courtesy timer
+		
 		GetWorldTimerManager().ClearTimer(TH_CourtesyEnd);
 	}
 }
@@ -53,10 +56,10 @@ void AGM_RaceManager::HandleCountdownFinished()
 		RS->bRaceRunning = true;
 		RS->bRaceFinished = false;
 
-		// Host/server UI
+		
 		OnStarted.Broadcast();
 
-		// Replication notify so clients fire OnRaceStarted
+		
 		RS->OnRep_RaceFlags();
 	}
 }
@@ -65,16 +68,16 @@ void AGM_RaceManager::NotifyPlayerFinished(APS_PlayerState* FinishedPlayer)
 {
 	if (!HasAuthority() || !FinishedPlayer) return;
 
-	// First finisher starts courtesy timer
+	
 	if (!bCourtesyStarted)
 	{
 		bCourtesyStarted = true;
 
-		// Start courtesy timer. When it ends, race will be marked finished
+		
 		ForceFinishRace(Config_CourtesySeconds);
 	}
 
-	// (Any extra logic per-player on finish can go here later)
+	
 }
 
 void AGM_RaceManager::ForceFinishRace(float CourtesySeconds)
@@ -83,11 +86,9 @@ void AGM_RaceManager::ForceFinishRace(float CourtesySeconds)
 
 	if (AGS_RaceState* RS = GetGameState<AGS_RaceState>())
 	{
-		// Race is no longer running, but not "finished" until courtesy ends
 		RS->bRaceRunning = false;
 		RS->bRaceFinished = false;
-
-		// Clear any existing courtesy timer and restart
+	
 		GetWorldTimerManager().ClearTimer(TH_CourtesyEnd);
 		if (CourtesySeconds > 0.f)
 		{
@@ -119,7 +120,7 @@ void AGM_RaceManager::HandleCourtesyEnd()
 		RS->bRaceFinished = true;
 
 		OnFinished.Broadcast();
-		RS->OnRep_RaceFlags();   // triggers OnRaceFinished on clients
+		RS->OnRep_RaceFlags();  
 	}
 }
 

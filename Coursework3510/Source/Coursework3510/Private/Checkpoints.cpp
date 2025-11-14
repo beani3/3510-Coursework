@@ -1,6 +1,9 @@
 #include "Checkpoints.h"
 #include "MyPlayerCar.h"
 
+
+// Checkpoints actor implementation to handle lap checkpoints for gameplay
+
 ACheckpoints::ACheckpoints()
 {
 	PrimaryActorTick.bCanEverTick = true;

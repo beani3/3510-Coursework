@@ -20,12 +20,11 @@ public:
 	UAC_PointsComponent();
 
 
-    /** Current score (replicated) */
+    // Current score (replicated)
     UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing = OnRep_Score, Category = "Score")
     int32 Score = 0;
 
-   
-    /** Called whenever Score changes (server and clients after OnRep) */
+    // Called whenever Score changes (server and clients after OnRep)
     UPROPERTY(BlueprintAssignable, Category = "Score")
     FOnScoreChanged OnScoreChanged;
 
@@ -48,7 +47,7 @@ protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
-	// Replication
+	// Replication setup
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
     UFUNCTION()

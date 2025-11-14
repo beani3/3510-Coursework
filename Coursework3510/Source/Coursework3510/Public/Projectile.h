@@ -60,12 +60,17 @@ protected:
 	void OnHit(UPrimitiveComponent* HitComp, AActor* Other, UPrimitiveComponent* OtherComp,
 		FVector NormalImpulse, const FHitResult& Hit);
 
-	// Helpers
+	//is victim valid for impact?
 	bool IsValidVictim(AActor* Other) const;
+	// Apply visuals properties from def
 	void ApplyVisualsFromDef(const UProjectileDef* Def);
+	// Apply lifespan from def
 	void ApplyLifespanFromDef(const UProjectileDef* Def);
+	// Handle impact on valid victim
 	void DoImpactOnValidVictim(AActor* Victim, const FVector& Where);
+	// Clamp height to spline if needed so projectile follows track
 	void ClampHeightToSpline(float DeltaSeconds);
+	// Destroy projectile
 	void Die();
 
 	USplineComponent* FindRaceSpline() const;
@@ -78,7 +83,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Projectile|Tuning")
 	float ArmingDelaySeconds = 0.12f;
 
-	// How hard homing projectiles can turn (bigger = tighter turn)
+	// How hard homing projectiles can turn 
 	UPROPERTY(EditDefaultsOnly, Category = "Projectile|Tuning")
 	float HomingAccelerationMagnitude = 30000.f;
 
@@ -86,13 +91,14 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Projectile|Tuning")
 	float SplineHeightOffsetZ = 50.f;
 
-	// Simple gameplay values (tweak to taste)
+	// impact daamage
 	UPROPERTY(EditDefaultsOnly, Category = "Projectile|Tuning")
 	float ImpactDamage = 25.f;
 
+	// impact points
 	UPROPERTY(EditDefaultsOnly, Category = "Projectile|Tuning")
 	int32 ImpactPoints = 50;
-
+	// current bounce count
 	int32 BounceCount = 0;
 
 	// Track spline
@@ -102,6 +108,6 @@ private:
 	// Whether we clamp to spline height
 	bool bClampToSplineHeight = false;
 
-	// Your custom "Projectile" object channel = 2nd custom channel
+	//Custom "Projectile" object channel = 2nd custom channel in project settings
 	static constexpr ECollisionChannel ProjectileChannel = ECC_GameTraceChannel2;
 };

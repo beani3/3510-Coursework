@@ -6,7 +6,9 @@
 #include "Engine/DataTable.h"
 #include "ItemTypes.generated.h"
 
-/* ---- BUFFS (Health only for now) ---- */
+// old data table based item type definitions for buffs and projectiles this was changed to data assets no longer used!
+
+
 UENUM(BlueprintType)
 enum class EBuffTypes2 : uint8
 {

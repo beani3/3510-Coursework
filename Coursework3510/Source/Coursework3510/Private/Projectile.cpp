@@ -255,14 +255,13 @@ void AProjectile::ClampHeightToSpline(float DeltaSeconds)
 
 	FVector Loc = GetActorLocation();
 
-	// Find nearest point on spline
+
 	const float Key = RaceSpline->FindInputKeyClosestToWorldLocation(Loc);
 	const FVector SplineLoc = RaceSpline->GetLocationAtSplineInputKey(Key, ESplineCoordinateSpace::World);
 
-	// We only force the Z to follow the spline (plus offset)
 	const float DesiredZ = SplineLoc.Z + SplineHeightOffsetZ;
 
-	Loc.Z = FMath::FInterpTo(Loc.Z, DesiredZ, DeltaSeconds, 10.f); // smooth adjustment
+	Loc.Z = FMath::FInterpTo(Loc.Z, DesiredZ, DeltaSeconds, 10.f); 
 	SetActorLocation(Loc, false, nullptr, ETeleportType::TeleportPhysics);
 }
 
@@ -275,11 +274,9 @@ bool AProjectile::IsValidVictim(AActor* Other) const
 	if (Now < IgnoreShooterUntilTime)
 		return false;
 
-	// Health component  valid car/target
 	if (Other->FindComponentByClass<UAC_HealthComponent>())
 		return true;
 
-	// Or Pawn/Vehicle type on root component
 	if (const UPrimitiveComponent* Prim = Cast<UPrimitiveComponent>(Other->GetRootComponent()))
 	{
 		const ECollisionChannel Ch = Prim->GetCollisionObjectType();
@@ -294,13 +291,11 @@ void AProjectile::DoImpactOnValidVictim(AActor* Victim, const FVector& Where)
 {
 	if (!HasAuthority() || !Victim) return;
 
-	// Damage
 	if (UAC_HealthComponent* Health = Victim->FindComponentByClass<UAC_HealthComponent>())
 	{
 		Health->ApplyDamage(ImpactDamage);
 	}
 
-	// Points to shooter
 	if (InstigatorActor)
 	{
 		if (UAC_PointsComponent* Points = InstigatorActor->FindComponentByClass<UAC_PointsComponent>())
@@ -309,7 +304,6 @@ void AProjectile::DoImpactOnValidVictim(AActor* Victim, const FVector& Where)
 		}
 	}
 
-	// Impact sound
 	if (Data && !Data->ImpactSFX.IsNull())
 	{
 		UGameplayStatics::PlaySoundAtLocation(
@@ -331,18 +325,15 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* Other, UPrimitiveC
 		return;
 	}
 
-	// Ignore hitting our own car
 	if (Other == InstigatorActor || Other == GetOwner())
 		return;
 
-	// If it's a valid car / pawn  damage and destroy
 	if (IsValidVictim(Other))
 	{
 		DoImpactOnValidVictim(Other, Hit.ImpactPoint);
 		return;
 	}
 
-	// Otherwise: world / props handling
 	const bool bIsHoming = (Data->Behavior == EProjBehavior::Homing);
 
 	if (Move->bShouldBounce && !bIsHoming)
@@ -363,7 +354,6 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* Other, UPrimitiveC
 	}
 	else
 	{
-		// Non-bouncy (or homing) dies on first world hit
 		if (Data && !Data->ImpactSFX.IsNull())
 		{
 			UGameplayStatics::PlaySoundAtLocation(

@@ -9,6 +9,10 @@ the amounbt of laps needed to finish, and a courtesy time after the first player
 #include "GameFramework/Actor.h"
 #include "RaceManager.generated.h"
 
+
+//
+// old no lomger used race manager class
+//
 UCLASS()
 class COURSEWORK3510_API ARaceManager : public AActor
 {

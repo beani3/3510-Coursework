@@ -6,6 +6,8 @@
 #include "Components/ActorComponent.h"
 #include "AC_PowerupComponent.generated.h"
 
+// this was the original PowerupComponet however it is currently unused as it went weird
+
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class COURSEWORK3510_API UAC_PowerupComponent : public UActorComponent

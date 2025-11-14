@@ -220,40 +220,46 @@ public:
 
 
 
-	/* ===== Components ===== */
-// Created in C++ so they’re always valid
+	// components
+	// 
+	//health component
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UAC_HealthComponent* AC_Health = nullptr;
 
+	// powerup component
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UAC_PowerupComponentC* AC_PowerupComponentC = nullptr;
-
+	
+	// projectile component
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UAC_ProjectileComponent* AC_Projectile = nullptr;
 
+	// vehicle movement component
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UAC_PointsComponent* AC_Points = nullptr;
 
+	//	arrow component for projectile spawn location
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UArrowComponent* Muzzle = nullptr;
 
-	/* ===== Race Manager ===== */
+	// reference to gamemode race manager
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Race")
 	AGM_RaceManager* GMRaceRef = nullptr;
 
-	// --- Reset reason tracing ---
-
-
+	
+	//reset debug
+	// Last reset cause
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Debug|Reset", meta = (AllowPrivateAccess = "true"))
 	EResetCause LastResetCause = EResetCause::None;
 
+	// Total number of resets performed
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Debug|Reset", meta = (AllowPrivateAccess = "true"))
 	int32 ResetCount = 0;
 
-	// Minimal cooldown so we don't print twice in one frame/network update
+	// Time of last reset log
 	double LastResetLogTime = -1.0;
 
-	// Turn on/off on-screen popups (logs always print)
+	// Turn on/off on-screen popups
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug|Reset")
 	bool bShowResetToast = true;
 
@@ -267,7 +273,7 @@ public:
 private:
 
 protected:
-
+	// Current lap start time
 	UPROPERTY()
 	float CurrentLapStartWorldTime = 0.f;
 
@@ -275,9 +281,8 @@ protected:
 	UPROPERTY()
 	bool bHasStartedLapTiming = false;
 
-	// Total number of laps required to finish (we’ll fill this from RaceManager or editor)
+	// Total number of laps required to finish
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Race")
-	int32 TotalLapsToFinish = 3; // or whatever you prefer
-
+	int32 TotalLapsToFinish = 3; 
 
 };

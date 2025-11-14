@@ -5,7 +5,10 @@
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
 #include "GameFramework/Pawn.h"
-#include "MyPlayerCar.h" // For RacePosition
+#include "MyPlayerCar.h" 
+
+//the projectile component used to fire projectiles from the owning actor want to add sound and visual effects later
+// definitions are data assets that define projectile behavior and visuals
 
 UAC_ProjectileComponent::UAC_ProjectileComponent()
 {
@@ -88,7 +91,7 @@ FTransform UAC_ProjectileComponent::BuildSpawnTM() const
 
 void UAC_ProjectileComponent::PlayMuzzleFX(const FTransform& SpawnTM)
 {
-    // Example placeholder: add SFX/VFX
+    
 }
 
 USceneComponent* UAC_ProjectileComponent::PickAheadHomingTarget() const

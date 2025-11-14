@@ -1,4 +1,7 @@
-// AC_BulletTime.cpp
+// Bullet time is an actor component that, when activated, moves its owner along a predefined spline at high speed,
+
+
+// Fixed issue with camera jitter on client have casue issues with physics on land needs sorting //
 
 #include "AC_BulletTime.h"
 #include "Kismet/GameplayStatics.h"
@@ -8,7 +11,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "TimerManager.h"
 
-UAC_BulletTime::UAC_BulletTime()
+UAC_BulletTime::UAC_BulletTime() 
 {
 	PrimaryComponentTick.bCanEverTick = true;
 	SetComponentTickEnabled(false);
@@ -18,14 +21,14 @@ void UAC_BulletTime::BeginPlay()
 {
 	Super::BeginPlay();
 
-	RaceSpline = FindRaceSpline();
+	RaceSpline = FindRaceSpline(); // find Spline with tag or name "Racetrack"
 	if (!RaceSpline)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[BulletTime] BeginPlay: no 'Racetrack' spline found yet."));
+		UE_LOG(LogTemp, Warning, TEXT("[BulletTime] BeginPlay: no 'Racetrack' spline found yet.")); // 
 	}
 }
 
-USplineComponent* UAC_BulletTime::FindRaceSpline()
+USplineComponent* UAC_BulletTime::FindRaceSpline() 
 {
 	UWorld* World = GetWorld();
 	if (!World) return nullptr;
@@ -70,7 +73,7 @@ USplineComponent* UAC_BulletTime::FindRaceSpline()
 	return nullptr;
 }
 
-void UAC_BulletTime::SetInputIgnored(bool bIgnore)
+void UAC_BulletTime::SetInputIgnored(bool bIgnore)  // im not sure this fixes what i was trying but documetntation is so lacking  still able to turn on break lights 
 {
 	APawn* Pawn = GetOwner() ? Cast<APawn>(GetOwner()) : nullptr;
 	if (!Pawn || !Pawn->IsLocallyControlled()) return;
@@ -80,7 +83,7 @@ void UAC_BulletTime::SetInputIgnored(bool bIgnore)
 
 	if (bIgnore)
 	{
-		// Only block movement – keep camera look working
+		
 		bPrevIgnoreMove = C->IsMoveInputIgnored();
 		C->SetIgnoreMoveInput(true);
 	}
@@ -92,11 +95,10 @@ void UAC_BulletTime::SetInputIgnored(bool bIgnore)
 
 void UAC_BulletTime::ZeroPhysicsVelocities() const
 {
-	// NO-OP: we’re not touching physics at all now to avoid breaking vehicles
-	// (leave this here so calls compile but do nothing)
+	// No longerneeded but scared to remove in case of the same bug with the duplicated powerup component
 }
 
-void UAC_BulletTime::ApplyOwnerVisibility(bool bVisible)
+void UAC_BulletTime::ApplyOwnerVisibility(bool bVisible) //makes the mesh invisible during bullet time
 {
 	if (!OwnerMesh)
 		OwnerMesh = GetOwner()->FindComponentByClass<USkeletalMeshComponent>();
@@ -104,7 +106,7 @@ void UAC_BulletTime::ApplyOwnerVisibility(bool bVisible)
 		OwnerMesh->SetVisibility(bVisible, true);
 }
 
-void UAC_BulletTime::SpawnOrDestroyVisual(bool bSpawn)
+void UAC_BulletTime::SpawnOrDestroyVisual(bool bSpawn) // spawns the bullet time visual replacement
 {
 	if (bSpawn)
 	{
@@ -132,7 +134,7 @@ void UAC_BulletTime::SpawnOrDestroyVisual(bool bSpawn)
 	}
 }
 
-void UAC_BulletTime::BoostNetRate(bool bBoost)
+void UAC_BulletTime::BoostNetRate(bool bBoost) // increases network update frequency during bullet time to reduce jitter
 {
 	if (AActor* Owner = GetOwner())
 	{
@@ -146,18 +148,18 @@ void UAC_BulletTime::BoostNetRate(bool bBoost)
 		}
 		else
 		{
-			// restore your defaults (tune to your project)
+			
 			Owner->SetNetUpdateFrequency(20.f);
-			Owner->SetMinNetUpdateFrequency(2.f);
+			Owner->SetMinNetUpdateFrequency(2.f); // think this is same as default
 			Owner->NetPriority = 1.f;
 		}
 	}
 }
 
 
-// ---------- Public API ----------
+// 
 
-void UAC_BulletTime::StartBulletTime(float DurationSeconds)
+void UAC_BulletTime::StartBulletTime(float DurationSeconds) // starts bullet time for a given duration
 {
 	if (DurationSeconds <= 0.f) return;
 
@@ -169,7 +171,7 @@ void UAC_BulletTime::StartBulletTime(float DurationSeconds)
 	ServerStartBulletTime(DurationSeconds);
 }
 
-void UAC_BulletTime::StopBulletTime()
+void UAC_BulletTime::StopBulletTime() // stops bullet time
 {
 	if (!GetOwner() || !GetOwner()->HasAuthority())
 	{
@@ -179,9 +181,9 @@ void UAC_BulletTime::StopBulletTime()
 	ServerStopBulletTime();
 }
 
-// ---------- Server RPCs ----------
+// 
 
-void UAC_BulletTime::ServerStartBulletTime_Implementation(float DurationSeconds)
+void UAC_BulletTime::ServerStartBulletTime_Implementation(float DurationSeconds) // server authoritative start
 {
 	if (bActive) return;
 
@@ -195,13 +197,13 @@ void UAC_BulletTime::ServerStartBulletTime_Implementation(float DurationSeconds)
 		}
 	}
 
-	const FVector MyLoc = GetOwner()->GetActorLocation();
-	const float Key = RaceSpline->FindInputKeyClosestToWorldLocation(MyLoc);
-	const float StartDist = RaceSpline->GetDistanceAlongSplineAtSplineInputKey(Key);
+	const FVector MyLoc = GetOwner()->GetActorLocation(); // get actor location
+	const float Key = RaceSpline->FindInputKeyClosestToWorldLocation(MyLoc); // find closest point on spline
+	const float StartDist = RaceSpline->GetDistanceAlongSplineAtSplineInputKey(Key); // get distance along spline
 
 	// Stop timer in case
-	GetWorld()->GetTimerManager().ClearTimer(BulletTimerHandle);
-	GetWorld()->GetTimerManager().SetTimer(
+	GetWorld()->GetTimerManager().ClearTimer(BulletTimerHandle); // clear any existing timer
+	GetWorld()->GetTimerManager().SetTimer( // set timer to stop bullet time after duration
 		BulletTimerHandle,
 		this,
 		&UAC_BulletTime::ServerStopBulletTime,
@@ -209,10 +211,10 @@ void UAC_BulletTime::ServerStartBulletTime_Implementation(float DurationSeconds)
 		false
 	);
 
-	MulticastStartBulletTime(DurationSeconds, StartDist);
+	MulticastStartBulletTime(DurationSeconds, StartDist); // multicast to all clients 
 }
 
-void UAC_BulletTime::ServerStopBulletTime_Implementation()
+void UAC_BulletTime::ServerStopBulletTime_Implementation() // server authoritative stop
 {
 	if (!bActive) return;
 
@@ -220,9 +222,9 @@ void UAC_BulletTime::ServerStopBulletTime_Implementation()
 	MulticastStopBulletTime();
 }
 
-// ---------- Multicast ----------
+// 
 
-void UAC_BulletTime::MulticastStartBulletTime_Implementation(float DurationSeconds, float StartDistanceOnSpline)
+void UAC_BulletTime::MulticastStartBulletTime_Implementation(float DurationSeconds, float StartDistanceOnSpline) // multicast start 
 {
 	if (!RaceSpline)
 		RaceSpline = FindRaceSpline();
@@ -247,7 +249,7 @@ void UAC_BulletTime::MulticastStartBulletTime_Implementation(float DurationSecon
 	BoostNetRate(true);
 }
 
-void UAC_BulletTime::MulticastStopBulletTime_Implementation()
+void UAC_BulletTime::MulticastStopBulletTime_Implementation() // multicast stop
 {
 	bActive = false;
 
@@ -265,8 +267,6 @@ void UAC_BulletTime::MulticastStopBulletTime_Implementation()
 	BoostNetRate(false);
 }
 
-// ---------- Tick ----------
-
 void UAC_BulletTime::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
@@ -280,9 +280,7 @@ void UAC_BulletTime::TickComponent(float DeltaTime, ELevelTick TickType, FActorC
 	APawn* Pawn = Cast<APawn>(Owner);
 	const bool bIsLocallyControlled = Pawn && Pawn->IsLocallyControlled();
 
-	// ---------------------------
-	// SERVER: authoritative movement + collision
-	// ---------------------------
+
 	if (bIsAuthority)
 	{
 		Elapsed += DeltaTime;
@@ -297,12 +295,10 @@ void UAC_BulletTime::TickComponent(float DeltaTime, ELevelTick TickType, FActorC
 
 		Owner->SetActorLocationAndRotation(Loc, Q, false, nullptr, ETeleportType::TeleportPhysics);
 
-		// does nothing now, but kept for possible future use
+		
 		ZeroPhysicsVelocities();
 	}
-	// ---------------------------
-	// OWNING CLIENT: local prediction so camera follows smoothly
-	// ---------------------------
+	
 	else if (bClientVisualSmoothing && bIsLocallyControlled)
 	{
 		LocalElapsed += DeltaTime;
@@ -315,8 +311,8 @@ void UAC_BulletTime::TickComponent(float DeltaTime, ELevelTick TickType, FActorC
 		const FRotator Rot = RaceSpline->GetRotationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
 		const FQuat    Q = bOrientToSpline ? Rot.Quaternion() : Owner->GetActorQuat();
 
-		// Move the pawn itself locally so the camera (attached) follows
+		
 		Owner->SetActorLocationAndRotation(Loc, Q, false, nullptr, ETeleportType::TeleportPhysics);
 	}
-	// Other remote clients just see replicated movement; no local prediction needed
+	
 }

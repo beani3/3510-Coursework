@@ -44,11 +44,9 @@ AMyPlayerCar::AMyPlayerCar()
 	AC_Projectile = CreateDefaultSubobject<UAC_ProjectileComponent>(TEXT("ProjectileComponent"));
 	AC_Points = CreateDefaultSubobject<UAC_PointsComponent>(TEXT("PointsComponent"));
 
-	//Add Interface
-
 	Muzzle = CreateDefaultSubobject<UArrowComponent>(TEXT("Muzzle"));
-	Muzzle->SetupAttachment(GetRootComponent()); // AWheeledVehiclePawn already has a root
-	Muzzle->SetRelativeLocation(FVector(100.f, 0.f, 50.f)); // tweak in editor as needed
+	Muzzle->SetupAttachment(GetRootComponent()); 
+	Muzzle->SetRelativeLocation(FVector(100.f, 0.f, 50.f));
 
 	bReplicates = true;
 }
@@ -70,13 +68,11 @@ void AMyPlayerCar::BeginPlay() {
 	if (AC_Health) { AC_Health->InitializeHealth(); }
 	if (AC_Projectile && Muzzle) { AC_Projectile->SetMuzzle(Muzzle); }
 
-	// --- Bind to GameState events (works on server & clients) ---
 	if (AGS_RaceState* RS = GetWorld() ? GetWorld()->GetGameState<AGS_RaceState>() : nullptr)
 	{
 		RS->OnRaceStarted.AddDynamic(this, &AMyPlayerCar::OnRaceStarted);
 		RS->OnRaceFinished.AddDynamic(this, &AMyPlayerCar::OnRaceFinished);
 
-		// If we joined mid-race, apply current state immediately
 		if (RS->bRaceRunning && !RS->bRaceFinished)
 		{
 			OnRaceStarted();
@@ -109,7 +105,6 @@ void AMyPlayerCar::Tick(float DeltaSeconds)
 	{
 		const FVector P = GetActorLocation();
 
-		// live progress (replicated)
 		DistanceOnSpline = GetDistanceAlongTrackAt(P);
 		LapProgress01 = GetLapProgress01At(P);
 
@@ -140,7 +135,6 @@ void AMyPlayerCar::Tick(float DeltaSeconds)
 			else if (bFlipped) { Cause = EResetCause::Flipped; }
 			else { Cause = EResetCause::OffTrack; }
 
-			// Log detailed reason + numbers (both server log and local popup)
 			LogResetReason(
 				Cause,
 				ForwardDot, WrongWayTimer, WrongWaySecondsToReset,
@@ -153,7 +147,6 @@ void AMyPlayerCar::Tick(float DeltaSeconds)
 		}
 	}
 
-	// --- Smoothed normalized speed at 5 Hz for UI ---
 	if (SpeedSampleInterval > 0.f && MaxSpeedForNormalization > KINDA_SMALL_NUMBER)
 	{
 		TimeSinceLastSpeedSample += DeltaSeconds;
@@ -170,8 +163,6 @@ void AMyPlayerCar::Tick(float DeltaSeconds)
 			const float Normalized =
 				FMath::Clamp(FMath::Abs(RawSpeedCmPerSec) / MaxSpeedForNormalization, 0.f, 1.f);
 
-			// Optionally you can also interpolate here if you want even softer changes,
-			// but at 5 Hz this alone usually looks good and stable.
 			SmoothedSpeed01 = Normalized;
 		}
 	}
@@ -189,13 +180,13 @@ void AMyPlayerCar::InitRacetrackSpline()
 	for (AActor* A : Found)
 	{
 		if (!IsValid(A)) continue;
-		// try by component name first
+		
 		if (USplineComponent* S = Cast<USplineComponent>(A->GetDefaultSubobjectByName(SplineComponentName)))
 		{
 			RaceSpline = S;
 			break;
 		}
-		// fallback: first SplineComponent on the actor
+		
 		TArray<USplineComponent*> Splines;
 		A->GetComponents(Splines);
 		if (Splines.Num() > 0)
@@ -224,10 +215,8 @@ float AMyPlayerCar::GetLapProgress01At(const FVector& WorldLoc) const
 }
 
 
-// === NEW smooth speed getter ===
 float AMyPlayerCar::GetNormalizedSpeed() const
 {
-	// Just return the cached 0..1 value that Tick updates at 5 Hz
 	return SmoothedSpeed01;
 }
 
@@ -262,6 +251,9 @@ void AMyPlayerCar::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 
 		// Powerup
 		EnhancedInputComponent->BindAction(PowerupAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::UsePowerup);
+		
+		//Reset
+		EnhancedInputComponent->BindAction(ResetAction, ETriggerEvent::Triggered, this, &AMyPlayerCar::ResetToCheckpoint);
 
 	}
 }
@@ -348,7 +340,6 @@ void AMyPlayerCar::LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints,
 
 	if (bCrossingStartFinish)
 	{
-		// First time we cross: just start the timer, don’t record a lap yet
 		if (!bHasStartedLapTiming)
 		{
 			bHasStartedLapTiming = true;
@@ -356,25 +347,19 @@ void AMyPlayerCar::LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints,
 		}
 		else
 		{
-			// We completed a lap -> compute lap time (local timing)
 			const float LapTime = Now - CurrentLapStartWorldTime;
 			CurrentLapStartWorldTime = Now;
 
-			// Push it into PlayerState
 			if (AController* PC = Cast<AController>(GetController()))
 			{
 				if (APS_PlayerState* PS = PC->GetPlayerState<APS_PlayerState>())
 				{
 					PS->RegisterLapTime(LapTime);
-
-					// Sync some basic state into PlayerState too
-					PS->CurrentLap = Lap + 1; // we’re about to increment Lap
+					PS->CurrentLap = Lap + 1;
 					PS->CurrentCheckpoint = 1;
 				}
 			}
 		}
-
-		// Increment lap + reset checkpoint
 		Lap += 1;
 		CurrentCheckpoint = 1;
 	}
@@ -389,16 +374,12 @@ void AMyPlayerCar::LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints,
 
 	UE_LOG(LogTemp, Warning, TEXT("Lap: %i, Checkpoint: %i"), Lap, CurrentCheckpoint);
 
-	// === Check if race is finished for this car ===
-	// Only the server should decide this and talk to GameMode
 	if (HasAuthority())
 	{
 		AGS_RaceState* RS = GetWorld() ? GetWorld()->GetGameState<AGS_RaceState>() : nullptr;
 		if (RS && bHasStartedLapTiming)
 		{
-			const int32 TotalLaps = RS->TotalLaps; // set by GM_RaceManager
-
-			// If we've gone beyond the required number of laps, this car has finished
+			const int32 TotalLaps = RS->TotalLaps; 			
 			if (Lap > TotalLaps)
 			{
 				AController* PC = Cast<AController>(GetController());
@@ -411,13 +392,11 @@ void AMyPlayerCar::LapCheckpoint(int32 _CheckpointNumber, int32 _MaxCheckpoints,
 					PS->FinishTimeSeconds = NowServer - RS->RaceStartServerTime;
 				}
 
-				//  NEW: show win screen immediately for this player
 				if (APC_RaceController* RacePC = Cast<APC_RaceController>(PC))
 				{
 					RacePC->ClientShowImmediateWinScreen();
 				}
 
-				// Still tell GameMode so courtesy timer starts on first finisher
 				if (AGM_RaceManager* GM = GetWorld()->GetAuthGameMode<AGM_RaceManager>())
 				{
 					GM->NotifyPlayerFinished(PS);
@@ -434,7 +413,6 @@ void AMyPlayerCar::ResetToCheckpoint()
 {
 	if (!RaceSpline) { InitRacetrackSpline(); if (!RaceSpline) return; }
 
-	// 1) Find the checkpoint actor with CheckpointNumber == CurrentCheckpoint
 	AActor* TargetCP = nullptr;
 	TArray<AActor*> AllCPs;
 	UGameplayStatics::GetAllActorsOfClass(this, ACheckpoints::StaticClass(), AllCPs);
@@ -442,28 +420,24 @@ void AMyPlayerCar::ResetToCheckpoint()
 	{
 		if (ACheckpoints* CP = Cast<ACheckpoints>(A))
 		{
-			// Note: expose CheckpointNumber via getter if it’s private
 			const int32 Num = CP->GetClass()->FindPropertyByName(TEXT("CheckpointNumber")) ? CP->CheckpointNumber : -1; // or add accessor on ACheckpoints
 			if (Num == CurrentCheckpoint) { TargetCP = CP; break; }
 		}
 	}
-	if (!TargetCP && AllCPs.Num() > 0) TargetCP = AllCPs[0]; // fallback
+	if (!TargetCP && AllCPs.Num() > 0) TargetCP = AllCPs[0]; 
 
-	// 2) Snap onto spline at CP’s closest distance
 	const float Key = RaceSpline->FindInputKeyClosestToWorldLocation(TargetCP ? TargetCP->GetActorLocation() : GetActorLocation());
 	float Dist = RaceSpline->GetDistanceAlongSplineAtSplineInputKey(Key) + FMath::Max(0.f, RespawnForwardMeters);
 
 	FVector NewLoc = RaceSpline->GetLocationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
 	FRotator NewRot = RaceSpline->GetRotationAtDistanceAlongSpline(Dist, ESplineCoordinateSpace::World);
 
-	// 3) Lateral offset (keep players from stacking)
 	if (!FMath::IsNearlyZero(RespawnLateralOffset))
 	{
 		const FVector Right = NewRot.RotateVector(FVector::RightVector);
 		NewLoc += Right * RespawnLateralOffset;
 	}
 
-	// 4) Teleport & zero physics
 	SetActorLocationAndRotation(NewLoc, NewRot, false, nullptr, ETeleportType::TeleportPhysics);
 	if (UPrimitiveComponent* Prim = Cast<UPrimitiveComponent>(GetRootComponent()))
 	{
@@ -483,7 +457,6 @@ void AMyPlayerCar::LogResetReason(
 {
 	const double Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
 
-	// Avoid double-logs in the same instant (rare, but safe)
 	if (LastResetLogTime >= 0.0 && FMath::IsNearlyEqual((float)Now, (float)LastResetLogTime, 0.0001f))
 	{
 		return;
@@ -493,7 +466,6 @@ void AMyPlayerCar::LogResetReason(
 	ResetCount++;
 	LastResetCause = Cause;
 
-	// Build a concise line with all the relevant inputs & thresholds
 	const TCHAR* CauseStr =
 		(Cause == EResetCause::WrongWay) ? TEXT("WrongWay") :
 		(Cause == EResetCause::Flipped) ? TEXT("Flipped") :
@@ -509,7 +481,6 @@ void AMyPlayerCar::LogResetReason(
 		*GetActorLocation().ToString()
 	);
 
-	// Optional: on-screen toast for the locally controlled player only
 	if (bShowResetToast)
 	{
 		const bool bLocallyControlled =
@@ -533,9 +504,6 @@ void AMyPlayerCar::LogResetReason(
 	}
 }
 
-
-
-// Input Event: When key 'X' is pressed
 void AMyPlayerCar::UsePowerup()
 {
 	if (AC_PowerupComponentC)
@@ -545,9 +513,6 @@ void AMyPlayerCar::UsePowerup()
 	}
 }
 
-
-
-// Race Started event handler
 void AMyPlayerCar::OnRaceStarted()
 {
 	// Print Hello string
@@ -556,19 +521,17 @@ void AMyPlayerCar::OnRaceStarted()
 	GetVehicleMovementComponent()->SetHandbrakeInput(false);
 }
 
-// Race Finished event handler
 void AMyPlayerCar::OnRaceFinished()
 {
 	GetVehicleMovementComponent()->SetHandbrakeInput(true);
 }
 
-
 FRaceData AMyPlayerCar::GetRaceData() const
 {
 	FRaceData D;
-	D.RacePosition = RacePosition;        // replicated int
-	D.Lap = Lap;                 // you already track this
-	D.CurrentCheckpoint = CurrentCheckpoint;   // you already track this
-	D.LapProgress01 = LapProgress01;       // replicated float (0..1)
+	D.RacePosition = RacePosition;
+	D.Lap = Lap;
+	D.CurrentCheckpoint = CurrentCheckpoint;
+	D.LapProgress01 = LapProgress01;     
 	return D;
 }

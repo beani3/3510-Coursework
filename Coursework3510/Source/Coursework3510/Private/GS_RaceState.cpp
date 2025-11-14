@@ -5,6 +5,8 @@
 #include "PS_PlayerState.h"
 #include "Net/UnrealNetwork.h"
 
+
+
 AGS_RaceState::AGS_RaceState()
 {
 	bReplicates = true;
@@ -67,7 +69,6 @@ float AGS_RaceState::GetCountdownSecondsRemaining() const
 
 void AGS_RaceState::NotifyCountdownStarted()
 {
-	// Server/host local notify; clients get it via OnRep_Countdown
 	OnCountdownStarted.Broadcast();
 	bPrevCountdownActive = IsCountdownActive();
 }
@@ -96,15 +97,12 @@ void AGS_RaceState::RebuildRaceResultsFromPlayerStates()
 		}
 	}
 
-	// Sort: finished first, then by RacePosition
 	RacePlayers.Sort([](const APS_PlayerState& A, const APS_PlayerState& B)
 		{
 			if (A.bHasFinished != B.bHasFinished)
 			{
-				return A.bHasFinished && !B.bHasFinished; // finished first
+				return A.bHasFinished && !B.bHasFinished;
 			}
-
-			// Lower RacePosition = better (1st, 2nd, 3rd...)
 			return A.RacePosition < B.RacePosition;
 		});
 
@@ -119,7 +117,6 @@ void AGS_RaceState::RebuildRaceResultsFromPlayerStates()
 
 		RaceResults.Add(Row);
 
-		// Track global fastest lap (ignore players with no laps)
 		if (PS->BestLapTimeSeconds > 0.f &&
 			(FastestLapTimeSeconds <= 0.f ||
 				PS->BestLapTimeSeconds < FastestLapTimeSeconds))

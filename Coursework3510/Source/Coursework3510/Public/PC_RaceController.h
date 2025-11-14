@@ -17,31 +17,34 @@ class COURSEWORK3510_API APC_RaceController : public APlayerController
 public:
 	APC_RaceController();
 
+	// Request to set paused state
 	UFUNCTION(BlueprintCallable, Category = "Race|UI")
 	void RequestSetPaused(bool bPause);
 
+	// Show immediate win screen (for players who did not finish the race)
 	UFUNCTION(Client, Reliable)
 	void ClientShowImmediateWinScreen();
 
 protected:
 	virtual void BeginPlay() override;
 
-	/* ===== Networking ===== */
+	// Handle paused state change
 	UFUNCTION(Server, Reliable)
 	void ServerSetPaused(bool bPause);
 
+	// Apply paused state on all clients
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastApplyPaused(bool bPause);	
 
-	/* ===== UI ===== */
-
-	
+	//pause menu widget
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> PauseMenuWidgetClass;
 
+	//countdown widget
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> CountdownWidgetClass;
-
+	
+	// win screen widget
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> WinScreenWidgetClass;
 
@@ -50,15 +53,19 @@ private:
 	UPROPERTY() UUserWidget* CountdownWidget = nullptr;
 	UPROPERTY() UUserWidget* WinScreenWidget = nullptr;
 
+	//show/hide pause menu
 	void ShowPauseMenu();
 	void HidePauseMenu();
 
+	//countdown started
 	UFUNCTION()
 	void HandleCountdownStarted();
-
+	 
+	//race started
 	UFUNCTION()
 	void OnRaceStarted();
 
+	//	race finished
 	UFUNCTION()
 	void OnRaceFinished();
 

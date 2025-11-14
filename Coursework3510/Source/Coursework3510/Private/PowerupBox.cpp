@@ -6,8 +6,8 @@
 #include "GameFramework/RotatingMovementComponent.h"
 #include "TimerManager.h"
 
-#include "AC_PowerupComponentC.h"     // Your inventory/power component
-#include "PowerItemDef.h"            // <-- header that declares UPowerItemDef
+#include "AC_PowerupComponentC.h"     
+#include "PowerItemDef.h"        
 
 APowerupBox::APowerupBox()
 {
@@ -63,7 +63,6 @@ void APowerupBox::OnBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* Ot
 
 	if (UAC_PowerupComponentC* PowerC = OtherActor->FindComponentByClass<UAC_PowerupComponentC>())
 	{
-		// Ensure your component API takes UPowerItemDef*
 		const bool bAlreadyHas = PowerC->HasItem();
 		if (!bAlreadyHas)
 		{
@@ -94,7 +93,7 @@ void APowerupBox::Consume()
 
 void APowerupBox::Respawn()
 {
-	if (!bIsFixed)  // randomize only if not fixed
+	if (!bIsFixed) 
 	{
 	RandomizeFromPool();
 	}

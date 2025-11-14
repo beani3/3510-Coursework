@@ -25,12 +25,14 @@ class COURSEWORK3510_API ARacePositionState : public AActor
 public:
     ARacePositionState();
 
+	// Frequency of position updates
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Race")
     float UpdateHz = 5.f; // 5x/sec
 
 protected:
     virtual void BeginPlay() override;
 
+	// List of runners in the race 
     UFUNCTION()
     void RecomputePositions();
 

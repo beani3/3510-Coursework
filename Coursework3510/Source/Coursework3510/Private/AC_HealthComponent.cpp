@@ -102,10 +102,10 @@ void UAC_HealthComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 	// ...
 }
 
-void UAC_HealthComponent::ApplyConfig(const FHealthComponentConfig& InCfg, bool bResetHealth)
+void UAC_HealthComponent::ApplyConfig(const FHealthComponentConfig& InCfg, bool bResetHealth) // Apply a configuration to the health component
 {
-	MaxHealth = FMath::Max(1.f, InCfg.MaxHealth);
-	bCanDie = InCfg.bCanDie;
+	MaxHealth = FMath::Max(1.f, InCfg.MaxHealth); // Ensure max health is at least 1
+	bCanDie = InCfg.bCanDie; 
 	bAutoRegen = InCfg.bAutoRegen;
 	RegenPerSecond = InCfg.RegenPerSecond;
 	RegenDelay = InCfg.RegenDelay;

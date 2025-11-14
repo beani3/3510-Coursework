@@ -4,6 +4,9 @@
 #include "AC_PowerupComponentC.h"
 #include "PowerUpUserInterface.h"
 
+//Power up component used to manage held powerup items
+//and activate them when needed
+
 UAC_PowerupComponentC::UAC_PowerupComponentC()
 {
 	PrimaryComponentTick.bCanEverTick = false;

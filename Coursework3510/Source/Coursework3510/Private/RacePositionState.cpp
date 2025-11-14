@@ -25,7 +25,6 @@ void ARacePositionState::BeginPlay()
 
 void ARacePositionState::RecomputePositions()
 {
-    // Gather all cars
     TArray<AActor*> Found;
     UGameplayStatics::GetAllActorsOfClass(this, AMyPlayerCar::StaticClass(), Found);
 
@@ -44,7 +43,6 @@ void ARacePositionState::RecomputePositions()
         }
     }
 
-    // Sort by Lap DESC, Checkpoint DESC, Distance DESC
     Runners.Sort([](const FRunner& L, const FRunner& R)
         {
             if (L.Lap != R.Lap)         return L.Lap > R.Lap;
@@ -52,17 +50,12 @@ void ARacePositionState::RecomputePositions()
             return L.DistanceOnSpline > R.DistanceOnSpline;
         });
 
-    // Assign positions
     for (int32 i = 0; i < Runners.Num(); ++i)
     {
         if (AMyPlayerCar* Car = Runners[i].Car.Get())
         {
             const int32 Pos = i + 1;
-
-            // Update pawn
             Car->RacePosition = Pos;
-
-            // Also update PlayerState
             if (AController* Controller = Cast<AController>(Car->GetController()))
             {
                 if (APS_PlayerState* PS = Controller->GetPlayerState<APS_PlayerState>())
