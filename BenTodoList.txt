@@ -1,0 +1,12 @@
+Fixes if extensions granted/Ben (est time 8 hours) 
+UI 999 on bullet time fire efect
+Fix the hitting of instigating  actor on projectile maybe try (teamjs)
+Fix projectile to actually damage what it has hit if they have health component or make interface to do this
+Fix the bullet end logic to stop the physics effecting player bug caused by anticipationj of location to keep smooth
+Fix end screen to have button for display of race resultsand on press show other players score times and positions 
+Leaderboard for the games fastest lap - which could easily be saved between  sessions
+Time trial mode gets best time of player and changes the timer to count down ( beat ghost style)
+Fix the object spawn script to be moveable in editor again as have broken when adding the component logic
+Add sfx and vfx for player car skids shooting hits and horn
+
+
