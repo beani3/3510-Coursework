@@ -94,4 +94,5 @@ private:
 
 	// Net rate boost during bullet time (reduce jitter)
 	void BoostNetRate(bool bBoost);
+	float SavedForwardSpeed = 0.f;
 };
